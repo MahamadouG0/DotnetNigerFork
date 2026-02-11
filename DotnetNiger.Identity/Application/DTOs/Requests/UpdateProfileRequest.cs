@@ -1,3 +1,4 @@
+// DTO request Identity: UpdateProfileRequest
 namespace DotnetNiger.Identity.Application.DTOs.Requests;
 
 public class UpdateProfileRequest

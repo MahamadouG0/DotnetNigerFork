@@ -8,20 +8,30 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## [Unreleased]
 
 ### Added
+
 - Structure complète du projet microservices
 - Gateway API centralisée avec YARP
 - Service d'identité avec JWT
 - Service communautaire
 - Documentation simplifiee (INDEX, SETUP, ARCHITECTURE, API)
+- Identity: profil (update), change password, change email
+- Identity: social links
+- Identity: roles, permissions, admin endpoints
+- Email provider configurable (SMTP, SendGrid, Mailgun)
+- Seed admin configurable via variables d'environnement
 
 ### Changed
+
 - Simplification et renommage des docs
 - Mise a jour des liens README
+- Ajout de la config Email et notes de seed admin
 
 ### Fixed
+
 - Résolution des erreurs Swagger pour les schémas manquants
 
 ### Security
+
 - Configuration JWT pour l'authentification
 - Hachage des mots de passe en bcrypt
 - Rate limiting par défaut
@@ -31,6 +41,7 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### Added
 
 #### Core Features
+
 - [x] API Gateway avec YARP (Reverse Proxy)
   - Routage intelligent des requêtes
   - Load balancing
@@ -49,6 +60,7 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - Feed utilisateur
 
 #### Infrastructure
+
 - [x] Docker & Docker Compose
 - [x] SQL Server Database
 - [x] Redis Cache
@@ -56,6 +68,7 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - [x] Serilog Logging
 
 #### API Features
+
 - [x] Middleware d'authentification
 - [x] Rate limiting
 - [x] Error handling global
@@ -63,6 +76,7 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - [x] Cache management
 
 #### Documentation
+
 - [x] README.md
 - [x] docs/SETUP.md
 - [x] docs/ARCHITECTURE.md
@@ -71,6 +85,7 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - [x] LICENSE (MIT)
 
 ### Security
+
 - JWT token validation
 - CORS configuration
 - Password hashing
@@ -78,6 +93,7 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Circuit breaker pattern
 
 ### Performance
+
 - Response caching with Redis
 - Database query optimization
 - Connection pooling
@@ -90,21 +106,27 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ### [X.Y.Z] - YYYY-MM-DD
 
 #### Added
+
 - Nouvelles fonctionnalités
 
 #### Changed
+
 - Changements dans les fonctionnalités existantes
 
 #### Deprecated
+
 - Fonctionnalités marquées pour suppression future
 
 #### Removed
+
 - Fonctionnalités supprimées
 
 #### Fixed
+
 - Bugs corrigés
 
 #### Security
+
 - Changements de sécurité
 
 ---
@@ -112,18 +134,21 @@ et ce projet adhère à [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 ## Version Planning
 
 ### v1.1.0 (Prévu Q2 2026)
+
 - [ ] Support OAuth2/OIDC
 - [ ] Notifications en temps réel
 - [ ] Système d'invitations
 - [ ] Webhooks
 
 ### v1.2.0 (Prévu Q3 2026)
+
 - [ ] API GraphQL
 - [ ] Support multi-tenancy
 - [ ] Dashboard d'administration
 - [ ] Analytics avancées
 
 ### v2.0.0 (Prévu Q4 2026)
+
 - [ ] Architecture event-driven
 - [ ] CQRS pattern
 - [ ] Machine learning recommendations

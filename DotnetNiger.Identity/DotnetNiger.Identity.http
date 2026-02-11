@@ -1,6 +1,45 @@
 @DotnetNiger.Identity_HostAddress = http://localhost:5075
+@token = <token>
 
-GET {{DotnetNiger.Identity_HostAddress}}/weatherforecast/
-Accept: application/json
+# Login (copier le token depuis la reponse)
+POST {{DotnetNiger.Identity_HostAddress}}/api/v1/auth/login
+Content-Type: application/json
+
+{
+	"email": "user@example.com",
+	"password": "Password123!"
+}
+
+###
+
+# Get profile
+GET {{DotnetNiger.Identity_HostAddress}}/api/v1/users/me
+Authorization: Bearer {{token}}
+
+###
+
+# Upload avatar
+POST {{DotnetNiger.Identity_HostAddress}}/api/v1/users/me/avatar
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="avatar"; filename="avatar.png"
+Content-Type: image/png
+
+< ./avatar.png
+--boundary--
+
+###
+
+# Delete avatar
+DELETE {{DotnetNiger.Identity_HostAddress}}/api/v1/users/me/avatar
+Authorization: Bearer {{token}}
+
+###
+
+# Get avatar
+GET {{DotnetNiger.Identity_HostAddress}}/api/v1/users/me/avatar
+Authorization: Bearer {{token}}
 
 ###

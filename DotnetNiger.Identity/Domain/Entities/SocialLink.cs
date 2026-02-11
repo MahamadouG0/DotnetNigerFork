@@ -1,3 +1,4 @@
+// Entite domaine Identity: SocialLink
 namespace DotnetNiger.Identity.Domain.Entities;
 
 public class SocialLink

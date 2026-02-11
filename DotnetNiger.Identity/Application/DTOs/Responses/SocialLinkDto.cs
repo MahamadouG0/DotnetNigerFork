@@ -1,3 +1,4 @@
+// DTO response Identity: SocialLinkDto
 namespace DotnetNiger.Identity.Application.DTOs.Responses;
 
 public class SocialLinkDto

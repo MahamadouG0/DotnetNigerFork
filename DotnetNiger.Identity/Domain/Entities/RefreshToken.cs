@@ -1,3 +1,4 @@
+// Entite domaine Identity: RefreshToken
 namespace DotnetNiger.Identity.Domain.Entities;
 
 public class RefreshToken

@@ -1,3 +1,4 @@
+// DTO response Identity: TokenDto
 namespace DotnetNiger.Identity.Application.DTOs.Responses;
 
 public class TokenDto

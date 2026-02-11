@@ -1,0 +1,1 @@
+// Contrat domaine Identity: ITokenable

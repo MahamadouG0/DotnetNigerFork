@@ -1,3 +1,4 @@
+// Entite domaine Identity: LoginHistory
 namespace DotnetNiger.Identity.Domain.Entities;
 
 public class LoginHistory

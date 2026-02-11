@@ -1,0 +1,1 @@
+// Enum domaine Identity: RoleType

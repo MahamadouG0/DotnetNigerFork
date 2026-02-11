@@ -7,6 +7,7 @@ Documentation courte et utile pour lancer et comprendre le projet.
 - [SETUP](./SETUP.md) - Installation et demarrage
 - [ARCHITECTURE](./ARCHITECTURE.md) - Vue d'ensemble des services
 - [API](./API.md) - Endpoints et auth
+- [Identity README](../DotnetNiger.Identity/README.md) - Guide du service Identity
 
 ## Parcours rapides
 
@@ -16,5 +17,6 @@ Documentation courte et utile pour lancer et comprendre le projet.
 
 ## Notes utiles
 
-- Scripts: run.ps1 (Windows) et run.sh (Linux/Mac)
+- Scripts: run.ps1 (Windows) et run.sh (Linux/Mac/Windows)
 - Ports par defaut: Gateway 5000, Identity 5075, Community 5269
+- Admin seed et Email provider: voir [SETUP](./SETUP.md) et [API](./API.md)

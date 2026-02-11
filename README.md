@@ -56,7 +56,7 @@ DotnetNiger est une plateforme communautaire moderne construite avec une archite
 
 - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [SQL Server 2022](https://www.microsoft.com/sql-server/sql-server-downloads) ou [Docker](https://www.docker.com/products/docker-desktop)
-- [Visual Studio Code](https://code.visualstudio.com/) (recommandé) ou vscode
+- [Visual Studio Code](https://code.visualstudio.com/) (recommandé)
 
 ### Installation Rapide
 
@@ -68,7 +68,7 @@ cd DotnetNiger
 # 2. Restaurer les packages
 dotnet restore
 
-# 3. Configurer la base de données (SQL Server via Docker)
+# 3. Configurer la base de données (SQL Server via Docker)ou utiliser le sqlite predefinit
 docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong@Passw0rd" \
   -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
 
@@ -96,6 +96,10 @@ curl -X POST http://localhost:5075/api/auth/register \
 curl -X POST http://localhost:5075/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"Test@123"}'
+
+## ⚙️ Configuration rapide (Identity)
+
+- Email provider: voir la section Email dans [docs/API.md](docs/API.md)
 ```
 
 ## 📚 Documentation

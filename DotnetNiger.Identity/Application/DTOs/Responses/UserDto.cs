@@ -1,3 +1,4 @@
+// DTO response Identity: UserDto
 namespace DotnetNiger.Identity.Application.DTOs.Responses;
 
 public class UserDto

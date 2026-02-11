@@ -1,3 +1,4 @@
+// Entite domaine Identity: ApplicationUser
 using Microsoft.AspNetCore.Identity;
 
 namespace DotnetNiger.Identity.Domain.Entities;

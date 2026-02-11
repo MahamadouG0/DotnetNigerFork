@@ -1,3 +1,4 @@
+// Entite domaine Identity: ApiKey
 namespace DotnetNiger.Identity.Domain.Entities;
 
 public class ApiKey
