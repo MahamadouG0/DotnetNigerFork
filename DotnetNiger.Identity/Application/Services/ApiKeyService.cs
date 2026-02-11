@@ -1,4 +1,5 @@
 // Service applicatif Identity: ApiKeyService
+using System.Security.Cryptography;
 using DotnetNiger.Identity.Application.DTOs.Requests;
 using DotnetNiger.Identity.Application.DTOs.Responses;
 using DotnetNiger.Identity.Application.Exceptions;

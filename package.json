@@ -13,7 +13,9 @@
   "keywords": [
     "dotnet",
     "community",
-    "niger"
+    "niger",
+    "identity",
+    "gateway"
   ],
   "author": "DotnetNiger",
   "license": "MIT"

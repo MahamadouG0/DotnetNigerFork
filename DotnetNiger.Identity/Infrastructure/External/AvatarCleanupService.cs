@@ -207,8 +207,8 @@ public class AvatarCleanupService : BackgroundService
 
 		if (Uri.TryCreate(fileUrl, UriKind.Absolute, out var uri))
 		{
-			var builder = new Azure.Storage.Blobs.Specialized.BlobUriBuilder(uri);
-			return builder.BlobName;
+			// var builder = new Azure.Storage.Blobs.Specialized.BlobUriBuilder(uri);
+			// return builder.BlobName;
 		}
 
 		return fileUrl.TrimStart('/');

@@ -73,7 +73,7 @@ builder.Services.AddDistributedMemoryCache();
 
 builder.Services.AddEmailProviders();
 builder.Services.AddIdentityApplicationServices();
-builder.Services.AddHostedService<AvatarCleanupService>();
+// builder.Services.AddHostedService<AvatarCleanupService>();
 
 builder.Services.AddAuthentication(options =>
     {

@@ -198,7 +198,9 @@ Authorization: Bearer <token>
 GET /api/v1/admin/audit-logs?adminUserId=<guid>&action=api_key&targetType=api_key&createdFrom=2026-01-01&createdTo=2026-02-10&skip=0&take=20
 Authorization: Bearer <token>
 ```
+
 **Derniere mise a jour:** 10 Fevrier 2026
+
 ## Errors (standard)
 
 - 400 Bad Request
