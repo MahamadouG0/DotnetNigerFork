@@ -1,223 +1,72 @@
 # DotnetNiger
 
-> Plateforme communautaire open-source pour la communauté DotnetNiger, construite avec .NET 8.0 LTS
+Plateforme communautaire microservices .NET 8 avec API Gateway Ocelot.
 
-[![.NET Version](https://img.shields.io/badge/.NET-8.0%20LTS-512BD4?logo=dotnet)](https://dotnet.microsoft.com/download/dotnet/8.0)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
-[![Status](https://img.shields.io/badge/Status-In%20Development-yellow.svg)](https://github.com/akaletekoffilevis/DotnetNiger)
+> Dernière mise à jour : **2026-03-23**
 
-## 📋 Vue d'ensemble
+## Services
 
-DotnetNiger est une plateforme communautaire moderne construite avec une architecture microservices .NET 8.0. Elle fournit des fonctionnalités de réseau social, forums de discussion et partage de contenu pour la communauté DotnetNiger.
+| Service                             | Port   | Description                                                         |
+| ----------------------------------- | ------ | ------------------------------------------------------------------- |
+| Gateway (`DotnetNiger.Gateway`)     | `5000` | Point d'entrée unique, routing Ocelot, auth JWT, rate limiting, QoS |
+| Identity (`DotnetNiger.Identity`)   | `5075` | Authentification, utilisateurs, rôles, permissions, administration  |
+| Community (`DotnetNiger.Community`) | `5269` | Posts, commentaires, events, projets, ressources, catégories, tags  |
 
-> ⚠️ **Note:** Ce projet est actuellement en développement actif et n'est pas encore en production.
-
-### Fonctionnalités Principales
-
-- 🔐 **Authentication JWT** - Système d'authentification sécurisé avec tokens JWT
-- 👥 **Gestion Utilisateurs** - Inscription, profils, rôles (Admin(Super Admin), Member)(Auto Attribut)
-- 📝 **Posts & Commentaires** - Création et partage de contenu
-- ❤️ **Système de Likes** - Interactions sociales
-- 👤 **Follow/Unfollow** - Réseau social
-- 🔍 **Recherche & Filtres** - Recherche avancée de contenu
-- 🚀 **API Gateway** - Point d'entrée unique avec YARP
-- 📊 **Monitoring** - Logs structurés et métriques
-- 🐳 **Docker Ready** - Déploiement containerisé
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     API Gateway (5000)                  │
-│                    YARP Reverse Proxy                   │
-│        JWT Validation • Rate Limiting • CORS            │
-└────────────────┬────────────────────────┬───────────────┘
-                 │                        │
-        ┌────────▼─────────┐     ┌───────▼──────────┐
-        │  Identity (5075) │     │ Community (5269) │
-        │  Authentication  │     │   Social Features│
-        │  Authorization   │     │   Posts, Likes   │
-        │  User Management │     │   Comments       │
-        └──────────────────┘     └──────────────────┘
-                 │                        │
-        ┌────────▼────────────────────────▼────────────┐
-        │           SQL Server 2022                    │
-        │        (PostgreSQL 16+ supporté)             │
-        └──────────────────────────────────────────────┘
-                 │
-        ┌────────▼────────┐
-        │   Redis Cache   │
-        └─────────────────┘
-```
-
-## 🚀 Quick Start
-
-### Prérequis
-
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [SQL Server 2022](https://www.microsoft.com/sql-server/sql-server-downloads) ou [Docker](https://www.docker.com/products/docker-desktop)
-- [Visual Studio Code](https://code.visualstudio.com/) (recommandé)
-
-### Installation Rapide
+## Démarrage rapide
 
 ```bash
-# 1. Cloner le repository
-git clone https://github.com/akaletekoffilevis/DotnetNiger.git
+git clone https://github.com/DelaliAbel/DotnetNiger.git
 cd DotnetNiger
-
-# 2. Restaurer les packages
 dotnet restore
+```
 
-# 3. Configurer la base de données (SQL Server via Docker)ou utiliser le sqlite predefinit
-docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong@Passw0rd" \
-  -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+Lancer dans cet ordre: Identity, puis Community, puis Gateway.
 
-# 4. Appliquer les migrations
+```bash
+# Terminal 1
 cd DotnetNiger.Identity
-dotnet ef database update
-cd ../DotnetNiger.Community
-dotnet ef database update
-cd ..
+dotnet run
 
-# 5. Lancer tous les services
-.\run.ps1          # Windows
-./run.sh           # Linux/Mac
+# Terminal 2
+cd DotnetNiger.Community
+dotnet run
+
+# Terminal 3
+cd DotnetNiger.Gateway
+dotnet run
 ```
 
-### Tester l'API
+## URLs utiles
 
-```bash
-# Inscription
-curl -X POST http://localhost:5075/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"Test@123","firstName":"John","lastName":"Doe"}'
+- `http://localhost:5000/swagger` (Swagger Gateway)
+- `http://localhost:5000/health` (health Gateway)
+- `http://localhost:5075/swagger` (Swagger Identity)
+- `http://localhost:5269/swagger` (Swagger Community)
 
-# Login
-curl -X POST http://localhost:5075/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"Test@123"}'
+## Points clés
 
-## ⚙️ Configuration rapide (Identity)
+- Versioning API activé: `api/v1/...` pour Identity et Community.
+- Communication Community vers Identity disponible via client HTTP typé (`IIdentityApiClient`).
+- Endpoints Diagnostics Identity exposés: `GET /api/v1/diagnostics/ping` et `GET /api/v1/diagnostics/health`.
+- Endpoints update Community réactivés pour Events, Projects et Resources.
+- Route admin Community priorisée dans Ocelot pour éviter le conflit avec la route admin Identity.
 
-- Email provider: voir la section Email dans [docs/API.md](docs/API.md)
-```
+## Configuration essentielle
 
-## 📚 Documentation
+| Variable               | Usage                                               |
+| ---------------------- | --------------------------------------------------- |
+| `Jwt__Key`             | Clé JWT partagée entre Gateway, Identity, Community |
+| `Jwt__Issuer`          | Émetteur JWT                                        |
+| `Jwt__Audience`        | Audience JWT                                        |
+| `Admin__ApiKey`        | Clé admin Community (`X-Admin-Key`)                 |
+| `IdentityApi__BaseUrl` | URL de base Identity utilisée par Community         |
 
-| Document                             | Description                 |
-| ------------------------------------ | --------------------------- |
-| [Index](docs/INDEX.md)               | Navigation documentation    |
-| [Setup](docs/SETUP.md)               | Installation et demarrage   |
-| [Architecture](docs/ARCHITECTURE.md) | Vue d'ensemble des services |
-| [API](docs/API.md)                   | Endpoints et auth           |
-| [Changelog](CHANGELOG.md)            | Historique des versions     |
-| [Security](SECURITY.md)              | Politique de securite       |
-| [License](LICENSE.md)                | Licence MIT                 |
+## Documentation
 
-## 🛠️ Stack Technique
-
-- **Framework:** .NET 8.0 LTS (C# 12)
-- **API Gateway:** YARP (Yet Another Reverse Proxy)
-- **Database:** SQL Server 2022 / PostgreSQL 16+ / Sqlite (Test Local)
-- **ORM:** Entity Framework Core 8.0
-- **Cache:** Redis
-- **Authentication:** JWT Bearer
-- **Logging:** Serilog
-- **Monitoring:** Application Insights, Prometheus
-- **Testing:** xUnit, Moq, FluentAssertions
-- **Containers:** Docker, Docker Compose
-
-## 🤝 Contribuer
-
-Nous accueillons les contributions ! Voici comment commencer :
-
-1. **Fork** le repository
-2. **Clone** votre fork localement
-3. **Créer une branche** depuis `dev` : `git checkout -b feat/ma-fonctionnalite`
-4. **Commit** vos changements : `git commit -m "feat(scope): description"`
-5. **Push** vers votre fork : `git push origin feat/ma-fonctionnalite`
-6. **Créer une Pull Request** vers la branche `dev`
-
-Ce guide suffit pour une premiere contribution.
-
-### Workflow Git
-
-- **`dev`** - Branche de développement (développez ici !)
-- **`main`** - Branche de production (releases uniquement)
-
-### Format des Commits
-
-Nous utilisons [Conventional Commits](https://www.conventionalcommits.org/):
-
-```bash
-feat(community): add post search functionality
-fix(identity): resolve token expiration bug
-docs: update API documentation
-```
-
-## 📊 Statut du Projet
-
-- ⏳ Architecture microservices (en cours)
-- ⏳ API Gateway avec YARP (en cours)
-- ⏳ Service Identity (Auth JWT) (en cours)
-- ⏳ Service Community (Social) (en cours)
-- ⏳ Docker & Docker Compose (en cours)
-- ⏳ Documentation complète (en cours)
-- ⏳ Tests unitaires (en cours)
-- ⏳ Tests d'intégration (en cours)
-- ⏳ CI/CD GitHub Actions (en cours)
-- 📅 Déploiement production (prévu)
-- 📅 Real-time features (prévu v1.1)
-
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir [LICENSE.md](LICENSE.md) pour les détails.
-
-```
-Copyright (c) 2026 DotnetNiger
-```
-
-## 👥 Auteur
-
-- **Créateur & Mainteneur:** [@akaletekoffilevis](https://github.com/akaletekoffilevis)
-
-> Ce projet est actuellement géré par son créateur en attendant sa mise en production et l'ouverture à la communauté.
-
-## 🌐 Liens
-
-- 📦 **Repository:** [github.com/akaletekoffilevis/DotnetNiger](https://github.com/akaletekoffilevis/DotnetNiger.git)
-- 💬 **Discussions:** [GitHub Discussions](https://github.com/akaletekoffilevis/DotnetNiger/discussions)
-- 📧 **Contact:** <abdallyacali@hotmail.com>
-
-## 🎯 Roadmap
-
-### Version 1.0.0 (En cours)
-
-- [ ] Architecture microservices
-- [ ] Services Identity & Community
-- [ ] API Gateway
-- [ ] Documentation complète
-- [ ] Tests d'intégration complets
-- [ ] CI/CD pipeline
-- [ ] Déploiement initial
-
-### Version 1.1.0 (Futur)
-
-- [ ] Real-time notifications (SignalR)
-- [ ] Advanced search (Elasticsearch)
-- [ ] File upload service
-- [ ] Email service (SendGrid)
-- [ ] Admin dashboard
-
-## ⭐ Support
-
-Si vous trouvez ce projet intéressant ou utile :
-
-- ⭐ Donnez une étoile sur GitHub
-- 🐛 Signalez des bugs via les [Issues](https://github.com/akaletekoffilevis/DotnetNiger/issues)
-- 💡 Proposez des features via les [Discussions](https://github.com/akaletekoffilevis/DotnetNiger/discussions)
-- 🤝 Contribuez via des Pull Requests
-
----
-
-**Made with ❤️ by the DotnetNiger Community**
+- [docs/INDEX.md](INDEX.md)
+- [docs/SETUP.md](SETUP.md)
+- [docs/ARCHITECTURE.md](ARCHITECTURE.md)
+- [docs/API.md](API.md)
+- [docs/HEALTH_REPORT.md](HEALTH_REPORT.md)
+- [DotnetNiger.Gateway/README.md](DotnetNiger.Gateway/README.md)
+- [DotnetNiger.Identity/README.md](DotnetNiger.Identity/README.md)

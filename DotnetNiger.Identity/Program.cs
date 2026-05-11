@@ -1,222 +1,88 @@
-// Composant Identity: Program
-using System.Text;
-using Asp.Versioning;
-using Asp.Versioning.ApiExplorer;
-using DotnetNiger.Identity.Api.Extensions;
-using DotnetNiger.Identity.Api.Filters;
-using DotnetNiger.Identity.Domain.Entities;
-using DotnetNiger.Identity.Infrastructure.Data;
-using DotnetNiger.Identity.Infrastructure.External;
-using DotnetNiger.Identity.Infrastructure.Security;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
+using DotnetNiger.Identity.Infrastructure;
+using DotnetNiger.Identity.Api;
+using DotnetNiger.Identity.Api.Middleware;
 
-var builder = WebApplication.CreateBuilder(args);
-// Configuration Serilog avec sinks definis dans appsettings.
-builder.Host.UseSerilog((context, services, loggerConfiguration) =>
-    loggerConfiguration
-        .ReadFrom.Configuration(context.Configuration)
-        .ReadFrom.Services(services)
-        .Enrich.FromLogContext());
-// Configuration principale du service Identity.
-var connectionString = builder.Configuration.GetConnectionString("DotnetNigerIdentityDbContext") ?? throw new InvalidOperationException("Connection string 'DotnetNigerIdentityContextConnection' not found.");
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(new ConfigurationBuilder()
+        .AddJsonFile("appsettings.json")
+        .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"}.json", true)
+        .Build())
+    .CreateLogger();
 
-// Chargement de la configuration JWT.
-var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
-    ?? throw new InvalidOperationException("JWT configuration section 'Jwt' not found.");
-
-// Add services to the container.
-builder.Services.AddControllers(options =>
+try
 {
-    // Gestion centralisee des erreurs metier.
-    options.Filters.Add<ExceptionFilter>();
-    options.Filters.Add<ValidateModelFilter>();
-});
+    var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddApiVersioning(options =>
-{
-    options.DefaultApiVersion = new ApiVersion(1, 0);
-    options.AssumeDefaultVersionWhenUnspecified = true;
-    options.ReportApiVersions = true;
-}).AddApiExplorer(options =>
-{
-    // Format de groupe: v1, v1.0, etc.
-    options.GroupNameFormat = "'v'VVV";
-    options.SubstituteApiVersionInUrl = true;
-});
+    builder.Host.UseSerilog();
 
-builder.Services.AddDbContext<DotnetNigerIdentityDbContext>(options =>
-    options.UseSqlite(connectionString));
+    builder.Services.AddControllers();
+    builder.Services.AddProblemDetails();
+    builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddIdentityCore<ApplicationUser>(options =>
+    builder.Services.AddIdentityInfrastructure(builder.Configuration);
+    builder.Services.AddIdentityServices();
+    builder.Services.AddTransient<IClaimsTransformation, RoleClaimsTransformer>();
+    builder.Services.AddApiVersioningWithSwagger();
+
+    var app = builder.Build();
+
+    app.UseSerilogRequestLogging();
+    app.UseCors("GatewayOnly");
+
+    app.UseMiddleware<ErrorHandlingMiddleware>();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    app.UseMiddleware<TenantResolutionMiddleware>();
+
+    if (app.Environment.IsDevelopment())
     {
-        options.User.RequireUniqueEmail = true;
-    })
-    .AddRoles<Role>()
-    .AddEntityFrameworkStores<DotnetNigerIdentityDbContext>()
-    .AddSignInManager<SignInManager<ApplicationUser>>()
-    .AddDefaultTokenProviders();
-
-builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));
-builder.Services.Configure<FileUploadOptions>(builder.Configuration.GetSection("FileUpload"));
-builder.Services.AddScoped<JwtTokenGenerator>();
-builder.Services.AddScoped<RefreshTokenGenerator>();
-builder.Services.AddHttpClient();
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddDistributedMemoryCache();
-
-builder.Services.AddEmailProviders();
-builder.Services.AddIdentityApplicationServices();
-// builder.Services.AddHostedService<AvatarCleanupService>();
-
-builder.Services.AddAuthentication(options =>
-    {
-        options.DefaultAuthenticateScheme = "Smart";
-        options.DefaultChallengeScheme = "Smart";
-    })
-    .AddPolicyScheme("Smart", "Smart", options =>
-    {
-        options.ForwardDefaultSelector = context =>
-            context.Request.Headers.ContainsKey("X-API-Key")
-                ? "ApiKey"
-                : JwtBearerDefaults.AuthenticationScheme;
-    })
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
+        app.UseSwagger();
+        app.UseSwaggerUI(options =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtOptions.Issuer,
-            ValidAudience = jwtOptions.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Key))
-        };
-    })
-    .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>("ApiKey", options => { });
-
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("ApiKeyOnly", policy =>
-        policy.RequireAuthenticatedUser()
-            .RequireClaim("scope", "api_key"));
-});
-
-// Configure Swagger/OpenAPI
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.ConfigureOptions<ConfigureSwaggerOptions>();
-
-var app = builder.Build();
-
-var fileUploadOptions = app.Services.GetRequiredService<IOptions<FileUploadOptions>>().Value;
-if (string.Equals(fileUploadOptions.Provider, "Local", StringComparison.OrdinalIgnoreCase))
-{
-    var uploadRoot = Path.Combine(app.Environment.ContentRootPath, fileUploadOptions.RootPath);
-    Directory.CreateDirectory(uploadRoot);
-    var publicBasePath = string.IsNullOrWhiteSpace(fileUploadOptions.PublicBasePath)
-        ? "/uploads"
-        : fileUploadOptions.PublicBasePath;
-    if (!publicBasePath.StartsWith('/'))
-    {
-        publicBasePath = "/" + publicBasePath;
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "DotnetNiger Identity v1");
+            options.RoutePrefix = "swagger";
+        });
     }
 
-    app.UseStaticFiles(new StaticFileOptions
+    app.MapGet("/health", () => Results.Ok(new
     {
-        FileProvider = new PhysicalFileProvider(uploadRoot),
-        RequestPath = publicBasePath
-    });
-}
+        status = "Healthy",
+        service = "DotnetNiger.Identity",
+        timestamp = DateTime.UtcNow
+    }));
 
-// await SeedAdminAsync(app); //appel de la fonction pour cree l'admin
+    app.MapControllers();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
+    // Initialisation de la base de données au démarrage
+    using (var scope = app.Services.CreateScope())
     {
-        var provider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
-        foreach (var description in provider.ApiVersionDescriptions)
-        {
-            options.SwaggerEndpoint($"/swagger/{description.GroupName}/swagger.json", $"Identity Service {description.GroupName}");
-        }
+        var tenantContext = scope.ServiceProvider.GetRequiredService<TenantContext>();
+        var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        await db.Database.EnsureCreatedAsync();
 
-        options.RoutePrefix = "swagger";
-        options.DocumentTitle = "Identity Service - API Documentation";
-        options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
-        options.EnableDeepLinking();
-        options.EnableFilter();
-    });
+        var userManager = scope.ServiceProvider.GetRequiredService<
+            Microsoft.AspNetCore.Identity.UserManager<DotnetNiger.Identity.Domain.Entities.ApplicationUser>>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<
+            Microsoft.AspNetCore.Identity.RoleManager<DotnetNiger.Identity.Domain.Entities.ApplicationRole>>();
+
+        await DbSeeder.SeedAsync(db, userManager, roleManager, tenantContext);
+    }
+
+    Log.Information("DotnetNiger.Identity démarré sur {Urls}", string.Join(", ", app.Urls));
+    await app.RunAsync();
+    return 0;
 }
-
-app.UseHttpsRedirection();
-app.UseErrorHandling();
-// Journalisation structuree des requetes HTTP.
-app.UseSerilogRequestLogging();
-app.UseRequestLogging();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-app.Run();
-
-public partial class Program
+catch (Exception ex)
 {
+    Log.Fatal(ex, "Application terminated unexpectedly");
+    return 1;
 }
-
-// creation de l'admin
-// static async Task SeedAdminAsync(WebApplication app)
-// {
-//     using var scope = app.Services.CreateScope();
-//     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-//     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-//     var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-//     var seedAdminEnabled = config.GetValue("SEED_ADMIN", true);
-//     if (!seedAdminEnabled)
-//     {
-//         return;
-//     }
-
-//     const string adminRoleName = "Admin";
-//     var adminEmail = config["ADMIN_EMAIL"] ?? "admin@dotnetniger.com";
-//     var adminPassword = config["ADMIN_PASSWORD"] ?? "AdminPassword@2006";
-//     var adminUsername = config["ADMIN_USERNAME"] ?? "admin";
-
-//     var roleExists = await roleManager.RoleExistsAsync(adminRoleName);
-//     if (!roleExists)
-//     {
-//         await roleManager.CreateAsync(new Role(adminRoleName));
-//     }
-
-//     var adminUser = await userManager.FindByEmailAsync(adminEmail);
-//     if (adminUser == null)
-//     {
-//         adminUser = new ApplicationUser
-//         {
-//             UserName = adminUsername,
-//             Email = adminEmail,
-//             EmailConfirmed = true,
-//             IsActive = true
-//         };
-
-//         var createResult = await userManager.CreateAsync(adminUser, adminPassword);
-//         if (!createResult.Succeeded)
-//         {
-//             return;
-//         }
-//     }
-
-//     var isInRole = await userManager.IsInRoleAsync(adminUser, adminRoleName);
-//     if (!isInRole)
-//     {
-//         await userManager.AddToRoleAsync(adminUser, adminRoleName);
-//     }
-// }
+finally
+{
+    await Log.CloseAndFlushAsync();
+}

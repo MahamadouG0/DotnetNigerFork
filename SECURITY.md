@@ -34,35 +34,13 @@ dotnet outdated --include-prerelease
 dotnet nuget locals all --clear
 ```
 
-## Scans de sécurité
+<!-- ## Scans de sécurité
 
 DotnetNiger utilise plusieurs outils de sécurité :
 
 - **Dependabot** - Scans de dépendances
 - **SonarQube** - Analyse statique
 - **OWASP** - Vulnérabilités connues
-- **CodeQL** - Analyse du code
-
-## Bonnes pratiques
-
-### Authentification
-
-- Utiliser HTTPS en production
-- Valider tous les JWT tokens
-- Implémenter rate limiting
-
-### Données
-
-- Chiffrer les données sensibles en transit et au repos
-- Valider toutes les entrées utilisateur
-- Utiliser des requêtes paramétrées
-
-### Secrets
-
-- Ne jamais commiter les secrets en Git
-- Utiliser un gestionnaire de secrets
-- Rotationner régulièrement les clés
-
----
+- **CodeQL** - Analyse du code -->
 
 Merci de votre aide pour garder DotnetNiger sécurisé !

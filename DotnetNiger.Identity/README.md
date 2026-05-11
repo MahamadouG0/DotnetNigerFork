@@ -1,78 +1,51 @@
 # DotnetNiger.Identity
 
-Service Identity pour l'authentification et la gestion des utilisateurs.
+Service d'authentification et d'autorisation multi-tenant basé sur **ASP.NET Core Identity** + **OpenIddict** (OAuth2/OIDC).
 
-## Demarrage rapide
+## Technologies
+
+- .NET 9.0
+- ASP.NET Core Identity (users, rôles, email)
+- OpenIddict (OAuth2/OIDC — password flow, refresh token)
+- SQLite (EF Core)
+- Swagger / OpenAPI
+- Serilog
+- FluentValidation
+- MailKit (SMTP)
+- Google, Microsoft, GitHub OAuth
+
+## Démarrage
 
 ```bash
-dotnet restore
 cd DotnetNiger.Identity
-dotnet ef database update
-./run.ps1    # Windows
-./run.sh     # Linux/Mac
+dotnet run
 ```
 
-Swagger: http://localhost:5075/swagger
+Service disponible sur `http://localhost:5075`.
 
-## Endpoints utiles
+## Endpoints principaux
 
-- POST /api/v1/auth/login
-- GET /api/v1/users/me
-- POST /api/v1/users/me/avatar
-- GET /api/v1/users/me/avatar
-- DELETE /api/v1/users/me/avatar
+| Méthode | Endpoint | Description |
+|---------|----------|-------------|
+| POST | `/connect/token` | Obtenir un JWT (password/refresh token) |
+| POST | `/api/v1/auth/register` | Créer un compte |
+| POST | `/api/v1/auth/login` | Login JSON (validation) |
+| POST | `/api/v1/auth/confirm-email` | Confirmer l'email |
+| GET | `/api/v1/auth/userinfo` | Infos utilisateur connecté |
+| GET | `/api/v1/diagnostics/health` | Health check |
+| GET | `/.well-known/openid-configuration` | Métadonnées OIDC |
+| GET | `/.well-known/jwks` | Clés publiques RSA |
 
-## Upload avatar
+## Configuration
 
-Le provider est configurable via `FileUpload:Provider`:
-
-- `Local`: stocke sur disque et expose via `/uploads`
-- `Azure`: stocke sur Azure Blob Storage
-
-Exemple (Local):
-
-```json
-"FileUpload": {
-  "Provider": "Local",
-  "RootPath": "uploads",
-  "PublicBasePath": "/uploads",
-  "MaxAvatarBytes": 2000000,
-  "AllowedAvatarContentTypes": ["image/jpeg", "image/png", "image/webp"],
-  "AllowedAvatarExtensions": [".jpg", ".jpeg", ".png", ".webp"],
-  "CleanupEnabled": false,
-  "CleanupIntervalMinutes": 1440,
-  "CleanupOrphanDays": 7,
-  "Azure": {
-    "ConnectionString": "",
-    "Container": "dotnetniger-uploads",
-    "PublicBaseUrl": ""
-  }
-}
-```
-
-## Tests
+Utiliser `user-secrets` pour les clés sensibles :
 
 ```bash
-dotnet test DotnetNiger.Identity.Tests
-dotnet test DotnetNiger.Identity.IntegrationTests
+dotnet user-secrets set "Smtp:Password" "votre-mot-de-passe"
+dotnet user-secrets set "Authentication:Google:ClientId" "..."
+dotnet user-secrets set "Authentication:Google:ClientSecret" "..."
 ```
 
-## Secrets
+## Documentation intégration
 
-Utilise user-secrets ou des variables d'environnement:
-
-```bash
-dotnet user-secrets set "Jwt:Key" "<jwt-secret>" --project DotnetNiger.Identity
-dotnet user-secrets set "Email:Smtp:Password" "<smtp-password>" --project DotnetNiger.Identity
-```
-
-```bash
-Jwt__Key=<jwt-secret>
-Email__Smtp__Password=<smtp-password>
-```
-
-## Fichiers utiles
-
-- [DotnetNiger.Identity.http](DotnetNiger.Identity.http) - requetes REST
-- [docs/API.md](../docs/API.md) - documentation API
-- [docs/SETUP.md](../docs/SETUP.md) - setup global
+Voir [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) pour le guide complet d'intégration client (JWT, social login, multi-tenant, endpoints).

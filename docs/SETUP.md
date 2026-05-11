@@ -1,150 +1,84 @@
-# Setup
-
-Guide court pour installer et demarrer DotnetNiger.
+# Setup Local
 
 ## Prerequis
 
-- .NET SDK 8.0
+- .NET SDK 8.x
+- Node.js + npm (pour outils frontend/scripts)
 - Git
-- Docker Desktop (recommande) ou SQL Server 2022 + Redis 7
 
-## Demarrage rapide (Docker)
+## Clonage et restauration
 
 ```bash
-git clone https://github.com/akaletekoffilevis/DotnetNiger.git
+git clone https://github.com/DelaliAbel/DotnetNiger.git
 cd DotnetNiger
-docker-compose up -d
+dotnet restore DotnetNiger.slnx
 ```
 
-Acces:
+## Ordre de demarrage recommande
 
-- http://localhost:5000/swagger
-- http://localhost:5075/swagger
-- http://localhost:5269/swagger
-
-## Demarrage local
+1. Identity
+2. Community
+3. Gateway
 
 ```bash
-dotnet restore
-
+# Terminal 1
 cd DotnetNiger.Identity
-dotnet ef database update
-cd ..\DotnetNiger.Community
-dotnet ef database update
-cd ..
+dotnet run
 
-./run.sh     # Linux/Mac
-./run.ps1    # Windows
+# Terminal 2
+cd DotnetNiger.Community
+dotnet run
+
+# Terminal 3
+cd DotnetNiger.Gateway
+dotnet run
 ```
 
-## Configuration
+## Ports par defaut (developpement)
 
-- appsettings.Development.json dans chaque service
-- ConnectionStrings pour Identity et Community
+- Gateway: http://localhost:5000
+- Identity: http://localhost:5075
+- Community: http://localhost:5269
 
-### Secrets (Identity)
+## Variables et configuration essentielles
 
-Eviter les secrets dans les fichiers. Utiliser des variables d'environnement ou user-secrets.
+### JWT (obligatoire)
 
-Exemples:
+La cle JWT doit etre coherente entre Gateway, Identity et Community.
+
+- `Jwt:Key`
+- `Jwt:Issuer`
+- `Jwt:Audience`
+
+### Community
+
+- `Admin:ApiKey` pour les operations admin proteges par cle API custom.
+- `IdentityApi:BaseUrl` pour la communication avec Identity.
+
+### Identity
+
+- `ConnectionStrings:DotnetNigerDb`
+- `Features:*` pour les toggles fonctionnels
+- `AccountDeletion:*` pour le workflow de suppression de compte
+- `OAuth:*` pour l'activation des providers externes
+
+## Build et tests
 
 ```bash
-dotnet user-secrets set "Jwt:Key" "<jwt-secret>" --project DotnetNiger.Identity
-dotnet user-secrets set "Email:Smtp:Password" "<smtp-password>" --project DotnetNiger.Identity
+dotnet build DotnetNiger.slnx
+dotnet test DotnetNiger.slnx
 ```
 
-Equivalent env vars:
+### Tests de garde d'architecture
 
 ```bash
-Jwt__Key=<jwt-secret>
-Email__Smtp__Password=<smtp-password>
+dotnet test DotnetNiger.Architecture.Tests/DotnetNiger.Architecture.Tests.csproj --configuration Release
 ```
 
-### File upload (avatar)
-
-Le service Identity supporte 2 providers:
-
-- `Local` (par defaut): stockage local et publication via `/uploads`
-- `Azure`: stockage via Azure Blob Storage
-
-Si `Provider = Local`, les fichiers sont servis par Identity sur `/uploads` et proxifies par le Gateway (meme chemin).
-
-Le job de cleanup supprime les avatars orphelins (non references en base) selon la frequence definie par `CleanupIntervalMinutes`.
-
-Exemple (Local):
-
-```json
-"FileUpload": {
-	"Provider": "Local",
-	"RootPath": "uploads",
-	"PublicBasePath": "/uploads",
-	"MaxAvatarBytes": 2000000,
-	"AllowedAvatarContentTypes": ["image/jpeg", "image/png", "image/webp"],
-	"AllowedAvatarExtensions": [".jpg", ".jpeg", ".png", ".webp"],
-	"CleanupEnabled": false,
-	"CleanupIntervalMinutes": 1440,
-	"CleanupOrphanDays": 7,
-	"Azure": {
-		"ConnectionString": "",
-		"Container": "dotnetniger-uploads",
-		"PublicBaseUrl": ""
-	}
-}
-```
-
-Exemple (Azure):
-
-```json
-"FileUpload": {
-	"Provider": "Azure",
-	"Azure": {
-		"ConnectionString": "<azure-connection-string>",
-		"Container": "dotnetniger-uploads",
-		"PublicBaseUrl": ""
-	}
-}
-```
-
-### Admin seed (Identity)
-
-Le seed admin est optionnel et ne s'execute qu'une seule fois.
-
-PowerShell:
-
-```powershell
-$env:SEED_ADMIN="true"
-$env:ADMIN_EMAIL="admin@dotnetniger.com"
-$env:ADMIN_PASSWORD="AdminPassword@2006"
-$env:ADMIN_USERNAME="admin"
-```
-
-Pour desactiver apres creation:
-
-```powershell
-$env:SEED_ADMIN="false"
-```
-
-### Email provider
-
-Choisir `smtp`, `sendgrid`, ou `mailgun` via la config Email.
-Exemples dans [docs/API.md](./API.md).
-
-## Verification
+## CI locale rapide (equivalent principal)
 
 ```bash
-curl http://localhost:5000/health
+dotnet restore DotnetNiger.slnx
+dotnet build DotnetNiger.slnx --configuration Release --no-restore
+dotnet test DotnetNiger.slnx --configuration Release --no-build
 ```
-
-## Depannage rapide
-
-- Port occupe: netstat -ano | findstr :5000
-- SQL Server: sqlcmd -S localhost -U sa -P YourPassword123!
-- Redis: redis-cli ping
-
-## Regles dev (courtes)
-
-- Controllers minces, logique dans Application
-- Valider les inputs, retourner des erreurs claires
-- Utiliser async/await partout
-- Aucun secret dans le code
-- DTOs pour requests et responses

@@ -1,151 +1,102 @@
-// Service applicatif Identity: PermissionService
-using DotnetNiger.Identity.Application.DTOs.Requests;
-using DotnetNiger.Identity.Application.DTOs.Responses;
-using DotnetNiger.Identity.Application.Exceptions;
-using DotnetNiger.Identity.Application.Services.Interfaces;
-using DotnetNiger.Identity.Domain.Entities;
-using DotnetNiger.Identity.Infrastructure.Data;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using DotnetNiger.Identity.Domain.Entities;
+using DotnetNiger.Identity.Infrastructure;
+using DotnetNiger.Identity.Application.DTOs;
 
 namespace DotnetNiger.Identity.Application.Services;
 
-// Gestion des permissions et associations role/permission.
-public class PermissionService : IPermissionService
+public class PermissionService
 {
-	private readonly DotnetNigerIdentityDbContext _dbContext;
-	private readonly RoleManager<Role> _roleManager;
+    private readonly IdentityDbContext _db;
 
-	public PermissionService(DotnetNigerIdentityDbContext dbContext, RoleManager<Role> roleManager)
-	{
-		_dbContext = dbContext;
-		_roleManager = roleManager;
-	}
+    public PermissionService(IdentityDbContext db) => _db = db;
 
-	public async Task<IReadOnlyList<PermissionDto>> GetAllAsync()
-	{
-		return await _dbContext.Permissions
-			.OrderBy(permission => permission.Name)
-			.Select(permission => new PermissionDto
-			{
-				Id = permission.Id,
-				Name = permission.Name,
-				Description = permission.Description
-			})
-			.ToListAsync();
-	}
+    public async Task<PermissionResponse> CreateAsync(CreatePermissionRequest request)
+    {
+        var permission = new Permission
+        {
+            Id = Guid.NewGuid(),
+            Name = request.Name,
+            Category = request.Category,
+            TenantId = request.TenantId
+        };
+        _db.Permissions.Add(permission);
+        await _db.SaveChangesAsync();
+        return MapToResponse(permission);
+    }
 
-	public async Task<PermissionDto> CreateAsync(AddPermissionRequest request)
-	{
-		var name = request.Name?.Trim();
-		if (string.IsNullOrWhiteSpace(name))
-		{
-			throw new IdentityException("Permission name is required.", 400);
-		}
+    public async Task<List<PermissionResponse>> GetByTenantAsync(Guid tenantId)
+    {
+        var permissions = await _db.Permissions
+            .Where(p => p.TenantId == tenantId)
+            .OrderBy(p => p.Category).ThenBy(p => p.Name)
+            .ToListAsync();
+        return permissions.Select(MapToResponse).ToList();
+    }
 
-		var exists = await _dbContext.Permissions.AnyAsync(permission => permission.Name == name);
-		if (exists)
-		{
-			throw new IdentityException("Permission already exists.", 409);
-		}
+    public async Task<List<PermissionGroupResponse>> GetGroupedByTenantAsync(Guid tenantId)
+    {
+        var permissions = await _db.Permissions
+            .Where(p => p.TenantId == tenantId)
+            .ToListAsync();
 
-		var permission = new Permission
-		{
-			Name = name,
-			Description = request.Description?.Trim() ?? string.Empty
-		};
+        return permissions
+            .GroupBy(p => p.Category)
+            .Select(g => new PermissionGroupResponse(g.Key,
+                g.Select(MapToResponse).ToList()))
+            .ToList();
+    }
 
-		_dbContext.Permissions.Add(permission);
-		await _dbContext.SaveChangesAsync();
+    public async Task DeleteAsync(Guid id)
+    {
+        var permission = await _db.Permissions.FindAsync(id);
+        if (permission != null)
+        {
+            _db.Permissions.Remove(permission);
+            await _db.SaveChangesAsync();
+        }
+    }
 
-		return new PermissionDto
-		{
-			Id = permission.Id,
-			Name = permission.Name,
-			Description = permission.Description
-		};
-	}
+    public async Task AssignToRoleAsync(Guid roleId, List<Guid> permissionIds)
+    {
+        var role = await _db.Roles.FindAsync(roleId);
+        if (role == null) throw new KeyNotFoundException("Rôle non trouvé");
 
-	public async Task DeleteAsync(Guid permissionId)
-	{
-		var permission = await _dbContext.Permissions.FirstOrDefaultAsync(item => item.Id == permissionId);
-		if (permission == null)
-		{
-			throw new IdentityException("Permission not found.", 404);
-		}
+        var existing = await _db.Set<Dictionary<string, object>>("RolePermission")
+            .Where(rp => (Guid)rp["RoleId"] == roleId)
+            .ToListAsync();
+        _db.Set<Dictionary<string, object>>("RolePermission").RemoveRange(existing);
 
-		var links = await _dbContext.RolePermissions
-			.Where(link => link.PermissionId == permission.Id)
-			.ToListAsync();
-		if (links.Count > 0)
-		{
-			_dbContext.RolePermissions.RemoveRange(links);
-		}
+        foreach (var permId in permissionIds)
+        {
+            _db.Set<Dictionary<string, object>>("RolePermission").Add(
+                new Dictionary<string, object>
+                {
+                    ["RoleId"] = roleId,
+                    ["PermissionId"] = permId
+                });
+        }
+        await _db.SaveChangesAsync();
+    }
 
-		_dbContext.Permissions.Remove(permission);
-		await _dbContext.SaveChangesAsync();
-	}
+    public async Task<List<string>> GetUserPermissionsAsync(Guid userId)
+    {
+        var roleIds = await _db.UserRoles
+            .Where(ur => ur.UserId == userId)
+            .Select(ur => ur.RoleId)
+            .ToListAsync();
 
-	public async Task AssignToRoleAsync(AssignPermissionRequest request)
-	{
-		var role = await _roleManager.FindByIdAsync(request.RoleId.ToString());
-		if (role == null)
-		{
-			throw new IdentityException("Role not found.", 404);
-		}
+        var permissionIds = await _db.Set<Dictionary<string, object>>("RolePermission")
+            .Where(rp => roleIds.Contains((Guid)rp["RoleId"]))
+            .Select(rp => (Guid)rp["PermissionId"])
+            .ToListAsync();
 
-		var permission = await _dbContext.Permissions.FirstOrDefaultAsync(item => item.Id == request.PermissionId);
-		if (permission == null)
-		{
-			throw new IdentityException("Permission not found.", 404);
-		}
+        return await _db.Permissions
+            .Where(p => permissionIds.Contains(p.Id))
+            .Select(p => p.Name)
+            .ToListAsync();
+    }
 
-		var exists = await _dbContext.RolePermissions.AnyAsync(link =>
-			link.RoleId == role.Id && link.PermissionId == permission.Id);
-		if (exists)
-		{
-			throw new IdentityException("Permission already assigned.", 409);
-		}
-
-		_dbContext.RolePermissions.Add(new RolePermission
-		{
-			RoleId = role.Id,
-			PermissionId = permission.Id
-		});
-
-		await _dbContext.SaveChangesAsync();
-	}
-
-	public async Task RemoveFromRoleAsync(AssignPermissionRequest request)
-	{
-		var link = await _dbContext.RolePermissions
-			.FirstOrDefaultAsync(item => item.RoleId == request.RoleId && item.PermissionId == request.PermissionId);
-		if (link == null)
-		{
-			throw new IdentityException("Role permission not found.", 404);
-		}
-
-		_dbContext.RolePermissions.Remove(link);
-		await _dbContext.SaveChangesAsync();
-	}
-
-	public async Task<IReadOnlyList<PermissionDto>> GetRolePermissionsAsync(Guid roleId)
-	{
-		var role = await _roleManager.FindByIdAsync(roleId.ToString());
-		if (role == null)
-		{
-			throw new IdentityException("Role not found.", 404);
-		}
-
-		return await _dbContext.RolePermissions
-			.Where(link => link.RoleId == role.Id)
-			.Select(link => new PermissionDto
-			{
-				Id = link.Permission.Id,
-				Name = link.Permission.Name,
-				Description = link.Permission.Description
-			})
-			.OrderBy(permission => permission.Name)
-			.ToListAsync();
-	}
+    private static PermissionResponse MapToResponse(Permission p) =>
+        new(p.Id, p.Name, p.Category, p.TenantId);
 }

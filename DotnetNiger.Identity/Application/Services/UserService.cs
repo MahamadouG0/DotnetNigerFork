@@ -1,193 +1,120 @@
-// Service applicatif Identity: UserService
-using System.ComponentModel.DataAnnotations;
-using DotnetNiger.Identity.Application.DTOs.Requests;
-using DotnetNiger.Identity.Application.DTOs.Responses;
-using DotnetNiger.Identity.Application.Exceptions;
-using DotnetNiger.Identity.Application.Services.Interfaces;
-using DotnetNiger.Identity.Application.Validators;
-using DotnetNiger.Identity.Domain.Entities;
-using DotnetNiger.Identity.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using DotnetNiger.Identity.Domain.Entities;
+using DotnetNiger.Identity.Infrastructure;
+using DotnetNiger.Identity.Application.DTOs;
 
 namespace DotnetNiger.Identity.Application.Services;
 
-// Service de gestion du profil et du compte.
-public class UserService : IUserService
+public class UserService
 {
-	// Lecture du profil utilisateur.
-	private readonly UserManager<ApplicationUser> _userManager;
-	private readonly DotnetNigerIdentityDbContext _dbContext;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IdentityDbContext _db;
 
-	public UserService(UserManager<ApplicationUser> userManager, DotnetNigerIdentityDbContext dbContext)
-	{
-		_userManager = userManager;
-		_dbContext = dbContext;
-	}
+    public UserService(UserManager<ApplicationUser> userManager, IdentityDbContext db)
+    {
+        _userManager = userManager;
+        _db = db;
+    }
 
-	public async Task<UserDto> GetProfileAsync(Guid userId)
-	{
-		var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
-		if (user == null)
-		{
-			throw new UserNotFoundException();
-		}
+    public async Task<UserResponse> CreateAsync(CreateUserRequest request)
+    {
+        var user = new ApplicationUser
+        {
+            UserName = request.Email, Email = request.Email,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            AvatarUrl = request.AvatarUrl,
+            TenantId = request.TenantId
+        };
+        var result = await _userManager.CreateAsync(user, request.Password);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
 
-		return await MapUserAsync(user);
-	}
+        if (request.Roles?.Any() == true)
+            await _userManager.AddToRolesAsync(user, request.Roles);
 
-	public async Task<UserDto> UpdateProfileAsync(Guid userId, UpdateProfileRequest request)
-	{
-		UpdateProfileRequestValidator.ValidateAndThrow(request);
-		var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
-		if (user == null)
-		{
-			throw new UserNotFoundException();
-		}
+        var roles = await _userManager.GetRolesAsync(user);
+        return MapToResponse(user, roles);
+    }
 
-		user.FullName = request.FullName ?? string.Empty;
-		user.Bio = request.Bio ?? string.Empty;
-		user.AvatarUrl = request.AvatarUrl ?? string.Empty;
-		user.Country = request.Country ?? string.Empty;
-		user.City = request.City ?? string.Empty;
+    public async Task<UserResponse?> GetByIdAsync(Guid id)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user == null) return null;
+        var roles = await _userManager.GetRolesAsync(user);
+        return MapToResponse(user, roles);
+    }
 
-		var result = await _userManager.UpdateAsync(user);
-		if (!result.Succeeded)
-		{
-			var message = string.Join(" ", result.Errors.Select(error => error.Description));
-			throw new IdentityException(message, 400);
-		}
+    public async Task<List<UserResponse>> GetByTenantAsync(Guid tenantId)
+    {
+        var users = await _db.Users.Where(u => u.TenantId == tenantId).ToListAsync();
+        var result = new List<UserResponse>();
+        foreach (var user in users)
+        {
+            var roles = await _userManager.GetRolesAsync(user);
+            result.Add(MapToResponse(user, roles));
+        }
+        return result;
+    }
 
-		return await MapUserAsync(user);
-	}
+    public async Task<UserResponse> UpdateAsync(Guid id, UpdateUserRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user == null) throw new KeyNotFoundException("Utilisateur non trouvé");
 
-	public async Task<UserDto> UpdateAvatarAsync(Guid userId, string avatarUrl)
-	{
-		if (string.IsNullOrWhiteSpace(avatarUrl))
-		{
-			throw new IdentityException("AvatarUrl is required.", 400);
-		}
+        if (request.FirstName != null) user.FirstName = request.FirstName;
+        if (request.LastName != null) user.LastName = request.LastName;
+        if (request.AvatarUrl != null) user.AvatarUrl = request.AvatarUrl;
+        if (request.IsActive.HasValue) user.IsActive = request.IsActive.Value;
 
-		if (!new UrlAttribute().IsValid(avatarUrl))
-		{
-			throw new IdentityException("AvatarUrl is invalid.", 400);
-		}
+        var result = await _userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
 
-		var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
-		if (user == null)
-		{
-			throw new UserNotFoundException();
-		}
+        var roles = await _userManager.GetRolesAsync(user);
+        return MapToResponse(user, roles);
+    }
 
-		user.AvatarUrl = avatarUrl;
-		var result = await _userManager.UpdateAsync(user);
-		if (!result.Succeeded)
-		{
-			var message = string.Join(" ", result.Errors.Select(error => error.Description));
-			throw new IdentityException(message, 400);
-		}
+    public async Task DeleteAsync(Guid id)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user != null) await _userManager.DeleteAsync(user);
+    }
 
-		return await MapUserAsync(user);
-	}
+    public async Task<UserResponse> ChangePasswordAsync(Guid id, ChangePasswordRequest request)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user == null) throw new KeyNotFoundException("Utilisateur non trouvé");
 
-	public async Task<UserDto> ClearAvatarAsync(Guid userId)
-	{
-		var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
-		if (user == null)
-		{
-			throw new UserNotFoundException();
-		}
+        var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
 
-		user.AvatarUrl = string.Empty;
-		var result = await _userManager.UpdateAsync(user);
-		if (!result.Succeeded)
-		{
-			var message = string.Join(" ", result.Errors.Select(error => error.Description));
-			throw new IdentityException(message, 400);
-		}
+        var roles = await _userManager.GetRolesAsync(user);
+        return MapToResponse(user, roles);
+    }
 
-		return await MapUserAsync(user);
-	}
+    public async Task ForgotPasswordAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user != null)
+        {
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        }
+    }
 
-	public async Task ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
-	{
-		var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
-		if (user == null)
-		{
-			throw new UserNotFoundException();
-		}
+    public async Task ResetPasswordAsync(string email, string token, string newPassword)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null) throw new KeyNotFoundException("Utilisateur non trouvé");
 
-		var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
-		if (!result.Succeeded)
-		{
-			var message = string.Join(" ", result.Errors.Select(error => error.Description));
-			throw new IdentityException(message, 400);
-		}
-	}
+        var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join(", ", result.Errors.Select(e => e.Description)));
+    }
 
-	public async Task ChangeEmailAsync(Guid userId, ChangeEmailRequest request)
-	{
-		var user = await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
-		if (user == null)
-		{
-			throw new UserNotFoundException();
-		}
-
-		var passwordValid = await _userManager.CheckPasswordAsync(user, request.CurrentPassword);
-		if (!passwordValid)
-		{
-			throw new InvalidCredentialsException();
-		}
-
-		var newEmail = request.NewEmail?.Trim();
-		if (string.IsNullOrWhiteSpace(newEmail))
-		{
-			throw new IdentityException("Email is required.", 400);
-		}
-
-		var existing = await _userManager.FindByEmailAsync(newEmail);
-		if (existing != null && existing.Id != user.Id)
-		{
-			throw new IdentityException("Email already in use.", 409);
-		}
-
-		var token = await _userManager.GenerateChangeEmailTokenAsync(user, newEmail);
-		var result = await _userManager.ChangeEmailAsync(user, newEmail, token);
-		if (!result.Succeeded)
-		{
-			var message = string.Join(" ", result.Errors.Select(error => error.Description));
-			throw new IdentityException(message, 400);
-		}
-	}
-
-	private async Task<UserDto> MapUserAsync(ApplicationUser user)
-	{
-		var roles = await _userManager.GetRolesAsync(user);
-		var socialLinks = await _dbContext.SocialLinks
-			.Where(link => link.UserId == user.Id)
-			.Select(link => new SocialLinkDto
-			{
-				Id = link.Id,
-				Platform = link.Platform,
-				Url = link.Url
-			})
-			.ToListAsync();
-
-		return new UserDto
-		{
-			Id = user.Id,
-			Username = user.UserName ?? string.Empty,
-			Email = user.Email ?? string.Empty,
-			FullName = user.FullName,
-			Bio = user.Bio,
-			AvatarUrl = user.AvatarUrl,
-			Country = user.Country ?? string.Empty,
-			City = user.City ?? string.Empty,
-			IsActive = user.IsActive,
-			CreatedAt = user.CreatedAt,
-			LastLoginAt = user.LastLoginAt,
-			Roles = roles.ToList(),
-			SocialLinks = socialLinks
-		};
-	}
+    private static UserResponse MapToResponse(ApplicationUser user, IList<string> roles) => new(
+        user.Id, user.Email!, user.FirstName, user.LastName, user.AvatarUrl,
+        user.TenantId, user.IsActive, user.EmailConfirmed, user.CreatedAt, roles);
 }

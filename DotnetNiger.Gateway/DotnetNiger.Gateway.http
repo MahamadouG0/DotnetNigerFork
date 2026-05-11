@@ -1,0 +1,253 @@
+###
+### DotnetNiger API Gateway - Test Routes
+### Remplacer {JWT_TOKEN} par un token valide obtenu depuis /auth/login
+###
+
+@baseUrl = http://localhost:5000/api
+@identityUrl = http://localhost:5075
+@jwtToken = 
+
+###
+### 🔓 PUBLIC ENDPOINTS - Auth (pas de JWT requis)
+###
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Adm"
+}
+
+### Register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "password": "NewPassword123!",
+  "fullName": "New User"
+}
+
+### Forgot Password
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+
+### Request Email Verification
+POST {{baseUrl}}/auth/request-email-verification
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+
+###
+### 🔐 PROTECTED ENDPOINTS - Users Profile (JWT requis)
+###
+
+### Get My Profile
+GET {{baseUrl}}/users/me
+Authorization: Bearer {{jwtToken}}
+
+### Update My Profile
+PUT {{baseUrl}}/users/me
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Updated Name",
+  "bio": "My bio",
+  "city": "Lagos"
+}
+
+### Change Password
+POST {{baseUrl}}/users/me/change-password
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "currentPassword": "OldPassword123!",
+  "newPassword": "NewPassword123!"
+}
+
+### Change Email
+POST {{baseUrl}}/users/me/change-email
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "newEmail": "newemail@example.com"
+}
+
+###
+### 🎫 PROTECTED ENDPOINTS - Tokens
+###
+
+### Refresh Token
+POST {{baseUrl}}/tokens/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "your_refresh_token_here"
+}
+
+### Logout
+POST {{baseUrl}}/tokens/logout
+Authorization: Bearer {{jwtToken}}
+
+###
+### 👥 PROTECTED ENDPOINTS - Roles
+###
+
+### Get All Roles
+GET {{baseUrl}}/roles
+Authorization: Bearer {{jwtToken}}
+
+### Create Role
+POST {{baseUrl}}/roles
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "name": "Moderator",
+  "description": "Modérateur de contenu"
+}
+
+### Get User Roles
+GET {{baseUrl}}/roles/user/{{userId}}
+Authorization: Bearer {{jwtToken}}
+
+### Assign Role to User
+POST {{baseUrl}}/roles/assign
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "userId": "{{userId}}",
+  "roleId": "{{roleId}}"
+}
+
+###
+### 🔑 PROTECTED ENDPOINTS - API Keys
+###
+
+### Get My API Keys
+GET {{baseUrl}}/api-keys
+Authorization: Bearer {{jwtToken}}
+
+### Create API Key
+POST {{baseUrl}}/api-keys
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "name": "My App API Key",
+  "expiresAt": "2027-03-03"
+}
+
+### Rotate API Key
+POST {{baseUrl}}/api-keys/{{apiKeyId}}/rotate
+Authorization: Bearer {{jwtToken}}
+
+### Delete API Key
+DELETE {{baseUrl}}/api-keys/{{apiKeyId}}
+Authorization: Bearer {{jwtToken}}
+
+###
+### 👫 PROTECTED ENDPOINTS - Social Links
+###
+
+### Get Social Links
+GET {{baseUrl}}/social-links
+Authorization: Bearer {{jwtToken}}
+
+### Add Social Link
+POST {{baseUrl}}/social-links
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "platform": "twitter",
+  "url": "https://twitter.com/username"
+}
+
+###
+### 🔐 ADMIN ENDPOINTS (Admin role + JWT requis)
+###
+
+### Get All Users (Admin)
+GET {{baseUrl}}/admin/users?skip=0&take=20
+Authorization: Bearer {{jwtToken}}
+
+### Get User Details (Admin)
+GET {{baseUrl}}/admin/users/{{userId}}
+Authorization: Bearer {{jwtToken}}
+
+### Delete User (Admin)
+DELETE {{baseUrl}}/admin/users/{{userId}}
+Authorization: Bearer {{jwtToken}}
+
+### Update User Status (Admin)
+PUT {{baseUrl}}/admin/users/{{userId}}/status
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+### Get User Login History (Admin)
+GET {{baseUrl}}/admin/users/{{userId}}/login-history
+Authorization: Bearer {{jwtToken}}
+
+### Get All API Keys (Admin)
+GET {{baseUrl}}/admin/api-keys
+Authorization: Bearer {{jwtToken}}
+
+### Get Audit Logs (Admin)
+GET {{baseUrl}}/admin/audit-logs?skip=0&take=50
+Authorization: Bearer {{jwtToken}}
+
+### Get File Upload Settings (Admin)
+GET {{baseUrl}}/admin/settings/file-upload
+Authorization: Bearer {{jwtToken}}
+
+### Update File Upload Settings (Admin)
+PUT {{baseUrl}}/admin/settings/file-upload
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+  "maxAvatarBytes": 5000000,
+  "allowedExtensions": [".jpg", ".png", ".webp"]
+}
+
+###
+### ✅ DIAGNOSTICS - Public Health Checks
+###
+
+### Gateway Health
+GET {{baseUrl}}/api/auth/login
+
+### Gateway Root
+GET {{baseUrl}}/
+
+### Identity Ping
+GET {{baseUrl}}/diagnostics/ping
+
+### Identity Health
+GET {{baseUrl}}/diagnostics/health
+
+###
+### 📝 NOTES sur l'utilisation
+###
+# 1. Remplacer {{jwtToken}} par un token valide obtenu depuis POST /auth/login
+# 2. Remplacer {{userId}}, {{roleId}}, {{apiKeyId}} par des IDs valides
+# 3. Tous les endpoints protégés requièrent le header "Authorization: Bearer {token}"
+# 4. Les endpoints Admin requièrent un utilisateur avec le rôle "Admin"
+# 5. Les réponses incluent des status codes: 200 (OK), 400 (Bad Request), 401 (Unauthorized), 403 (Forbidden), 404 (Not Found)

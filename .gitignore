@@ -62,6 +62,18 @@ coverage/
 *.mdf
 *.ldf
 *.ndf
+*.db
+*.db-*
+DotnetNiger.db
+DotnetNiger.db-shm
+DotnetNiger.db-wal
+
+DotnetNigerCommunity.db
+DotnetNigerCommunity.db-shm
+DotnetNigerCommunity.db-wal
+
+# Uploads
+uploads/
 
 # OS files
 .DS_Store
@@ -93,8 +105,8 @@ __pycache__/
 *$py.class
 
 # Package manager locks (optionnel)
-# package-lock.json
-# yarn.lock
+package-lock.json
+yarn.lock
 
 # macOS
 .DS_Store
@@ -125,3 +137,13 @@ local.settings.json
 *.crt
 *.pfx
 !.gitkeep
+
+# Folder
+DotnetNiger/
+
+# Health report (contient des infos sensibles sur l'architecture)
+docs/HEALTH_REPORT.md
+
+DotnetNiger
+
+.fake

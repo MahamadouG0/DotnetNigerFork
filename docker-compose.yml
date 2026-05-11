@@ -11,6 +11,10 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
+      - DownstreamServices__Identity__HealthUrl=http://identity:8081/api/v1/diagnostics/health
+      - DownstreamServices__Identity__SwaggerUrl=http://identity:8081/swagger/v1/swagger.json
+      - DownstreamServices__Community__HealthUrl=http://community:8082/api/v1/test/health
+      - DownstreamServices__Community__SwaggerUrl=http://community:8082/swagger/v1/swagger.json
     depends_on:
       - identity
       - community
@@ -32,7 +36,10 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8081
-      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=DotnetNiger.Identity;User Id=sa;Password=YourPassword123!;TrustServerCertificate=true;
+      - ConnectionStrings__DefaultConnection=Data Source=/data/DotnetNigerIdentity.db
+      - CommunityApi__BaseUrl=http://community:8082/
+      - CommunityApi__ProvisioningApiKey=dev-internal-provisioning-key-change-me
+      - Integration__ProvisioningApiKey=dev-internal-provisioning-key-change-me
     depends_on:
       - sqlserver
     networks:
@@ -53,7 +60,10 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8082
-      # - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=DotnetNiger.Community;User Id=sa;Password=YourPassword123!;TrustServerCertificate=true;
+      - ConnectionStrings__DotnetNigerDb=Data Source=/tmp/DotnetNiger.Community.db
+      - IdentityApi__BaseUrl=http://identity:8081/
+      - IdentityApi__ProvisioningApiKey=dev-internal-provisioning-key-change-me
+      - Integration__ProvisioningApiKey=dev-internal-provisioning-key-change-me
     depends_on:
       - sqlserver
     networks:
@@ -64,7 +74,7 @@ services:
       timeout: 5s
       retries: 3
 
-  # SQL Server (optionnel - si vous utilisez une BD)
+  # SQL Server
   # sqlserver:
   #   image: mcr.microsoft.com/mssql/server:2022-latest
   #   environment:

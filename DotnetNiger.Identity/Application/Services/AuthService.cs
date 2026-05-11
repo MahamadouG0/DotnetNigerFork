@@ -1,278 +1,213 @@
-// Service applicatif Identity: AuthService
-using DotnetNiger.Identity.Application.DTOs.Requests;
-using DotnetNiger.Identity.Application.DTOs.Responses;
-using DotnetNiger.Identity.Application.Exceptions;
-using DotnetNiger.Identity.Application.Services.Interfaces;
-using DotnetNiger.Identity.Application.Validators;
-using DotnetNiger.Identity.Domain.Entities;
-using DotnetNiger.Identity.Infrastructure.Data;
-using DotnetNiger.Identity.Infrastructure.Security;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using DotnetNiger.Identity.Domain.Entities;
+using DotnetNiger.Identity.Infrastructure;
 
 namespace DotnetNiger.Identity.Application.Services;
 
-// Service d'authentification et de gestion des tokens.
-public class AuthService : IAuthService
+public class AuthService
 {
-	// Logique de login/inscription.
-	private readonly UserManager<ApplicationUser> _userManager;
-	private readonly DotnetNigerIdentityDbContext _dbContext;
-	private readonly JwtTokenGenerator _jwtTokenGenerator;
-	private readonly RefreshTokenGenerator _refreshTokenGenerator;
-	private readonly JwtOptions _jwtOptions;
-	private readonly IEmailService _emailService;
-	private readonly ILoginHistoryService _loginHistoryService;
+    private static readonly char[] CodeChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".ToCharArray();
 
-	public AuthService(
-		UserManager<ApplicationUser> userManager,
-		DotnetNigerIdentityDbContext dbContext,
-		JwtTokenGenerator jwtTokenGenerator,
-		RefreshTokenGenerator refreshTokenGenerator,
-		IOptions<JwtOptions> jwtOptions,
-		IEmailService emailService,
-		ILoginHistoryService loginHistoryService)
-	{
-		_userManager = userManager;
-		_dbContext = dbContext;
-		_jwtTokenGenerator = jwtTokenGenerator;
-		_refreshTokenGenerator = refreshTokenGenerator;
-		_jwtOptions = jwtOptions.Value;
-		_emailService = emailService;
-		_loginHistoryService = loginHistoryService;
-	}
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly TenantContext _tenantContext;
+    private readonly IdentityDbContext _db;
+    private readonly IEmailSender<ApplicationUser> _emailSender;
+    private readonly SmtpOptions _smtp;
 
-	public async Task<AuthDto> RegisterAsync(RegisterRequest request)
-	{
-		RegisterRequestValidator.ValidateAndThrow(request);
-		var existingByEmail = await _userManager.FindByEmailAsync(request.Email);
-		if (existingByEmail != null)
-		{
-			throw new UserAlreadyExistsException("Email already in use.");
-		}
+    public AuthService(UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager,
+        TenantContext tenantContext, IdentityDbContext db,
+        IEmailSender<ApplicationUser> emailSender,
+        IOptions<SmtpOptions> smtp)
+    {
+        _userManager = userManager;
+        _signInManager = signInManager;
+        _tenantContext = tenantContext;
+        _db = db;
+        _emailSender = emailSender;
+        _smtp = smtp.Value;
+    }
 
-		var existingByUsername = await _userManager.FindByNameAsync(request.Username);
-		if (existingByUsername != null)
-		{
-			throw new UserAlreadyExistsException("Username already in use.");
-		}
+    public async Task<(ApplicationUser user, IList<string> roles)> ValidateCredentialsAsync(
+        string email, string password, Guid? tenantId = null)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null || !user.IsActive)
+            throw new UnauthorizedAccessException("Email ou mot de passe incorrect");
 
-		var user = new ApplicationUser
-		{
-			UserName = request.Username,
-			Email = request.Email,
-			FullName = request.FullName,
-			Country = request.Country,
-			City = request.City,
-			IsActive = true
-		};
+        if (tenantId.HasValue && user.TenantId != tenantId.Value)
+            throw new UnauthorizedAccessException("Utilisateur non trouvé dans ce tenant");
 
-		var result = await _userManager.CreateAsync(user, request.Password);
-		if (!result.Succeeded)
-		{
-			var message = string.Join(" ", result.Errors.Select(error => error.Description));
-			throw new IdentityException(message, 400);
-		}
+        if (!await _userManager.IsEmailConfirmedAsync(user))
+            throw new UnauthorizedAccessException("Email non confirmé");
 
-		var confirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-		await _emailService.SendAsync(user.Email ?? string.Empty, "Verify email", $"Your verification token: {confirmationToken}");
+        var result = await _signInManager.CheckPasswordSignInAsync(user, password, true);
+        if (result.IsLockedOut)
+            throw new UnauthorizedAccessException("Compte temporairement verrouillé");
+        if (!result.Succeeded)
+            throw new UnauthorizedAccessException("Email ou mot de passe incorrect");
 
-		var tokenDto = await CreateTokenAsync(user);
-		var userDto = await MapUserAsync(user);
+        var roles = await _userManager.GetRolesAsync(user);
+        _tenantContext.TenantId = user.TenantId;
+        return (user, roles);
+    }
 
-		return new AuthDto
-		{
-			Success = true,
-			Message = "Registration successful. Please verify your email.",
-			User = userDto,
-			Token = tokenDto
-		};
-	}
+    public async Task<(ApplicationUser user, string code)> RegisterAsync(string email, string password,
+        string firstName, string lastName, Guid? tenantId = null)
+    {
+        if (await _userManager.FindByEmailAsync(email) != null)
+            throw new InvalidOperationException("Un compte avec cet email existe déjà");
 
-	public async Task<AuthDto> LoginAsync(LoginRequest request)
-	{
-		LoginRequestValidator.ValidateAndThrow(request);
-		var user = await _userManager.FindByEmailAsync(request.Email);
-		if (user == null)
-		{
-			throw new InvalidCredentialsException();
-		}
+        var tenant = tenantId.HasValue
+            ? await _db.Tenants.FindAsync(tenantId.Value)
+            : await _db.Tenants.FirstOrDefaultAsync();
 
-		if (!user.IsActive)
-		{
-			await _loginHistoryService.RecordAsync(user.Id, false, "User disabled.");
-			throw new IdentityException("User is disabled.", 403);
-		}
+        if (tenant == null)
+            throw new InvalidOperationException("Aucun tenant trouvé");
 
-		if (!user.EmailConfirmed)
-		{
-			await _loginHistoryService.RecordAsync(user.Id, false, "Email not verified.");
-			throw new IdentityException("Email is not verified.", 403);
-		}
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            FirstName = firstName,
+            LastName = lastName,
+            TenantId = tenant.Id,
+            IsActive = true,
+            EmailConfirmed = false
+        };
 
-		var passwordValid = await _userManager.CheckPasswordAsync(user, request.Password);
-		if (!passwordValid)
-		{
-			await _loginHistoryService.RecordAsync(user.Id, false, "Invalid credentials.");
-			throw new InvalidCredentialsException();
-		}
+        var result = await _userManager.CreateAsync(user, password);
+        if (!result.Succeeded)
+            throw new InvalidOperationException($"Erreur création: {string.Join(", ", result.Errors.Select(e => e.Description))}");
 
-		user.LastLoginAt = DateTime.UtcNow;
-		await _userManager.UpdateAsync(user);
-		await _loginHistoryService.RecordAsync(user.Id, true, string.Empty);
+        await _userManager.AddToRoleAsync(user, "User");
 
-		var tokenDto = await CreateTokenAsync(user);
-		var userDto = await MapUserAsync(user);
+        var code = GenerateCode();
+        user.EmailConfirmationCode = code;
+        user.EmailConfirmationCodeExpiry = DateTime.UtcNow.AddMinutes(15);
+        await _userManager.UpdateAsync(user);
 
-		return new AuthDto
-		{
-			Success = true,
-			Message = "Login successful.",
-			User = userDto,
-			Token = tokenDto
-		};
-	}
+        await SendConfirmationEmailAsync(user, code);
 
-	public async Task<string?> RequestEmailVerificationAsync(RequestEmailVerificationRequest request)
-	{
-		var email = request.Email?.Trim();
-		if (string.IsNullOrWhiteSpace(email))
-		{
-			throw new IdentityException("Email is required.", 400);
-		}
+        _tenantContext.TenantId = user.TenantId;
+        return (user, code);
+    }
 
-		var user = await _userManager.FindByEmailAsync(email);
-		if (user == null)
-		{
-			return null;
-		}
+    public async Task ConfirmEmailAsync(string email, string code)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+            throw new InvalidOperationException("Utilisateur non trouvé");
 
-		if (user.EmailConfirmed)
-		{
-			return null;
-		}
+        if (user.EmailConfirmed)
+            throw new InvalidOperationException("Email déjà confirmé");
 
-		var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-		await _emailService.SendAsync(email, "Verify email", $"Your verification token: {token}");
-		return token;
-	}
+        if (user.EmailConfirmationCode == null || user.EmailConfirmationCodeExpiry == null)
+            throw new InvalidOperationException("Aucun code de confirmation trouvé");
 
-	public async Task<string?> RequestPasswordResetAsync(ForgotPasswordRequest request)
-	{
-		var email = request.Email?.Trim();
-		if (string.IsNullOrWhiteSpace(email))
-		{
-			throw new IdentityException("Email is required.", 400);
-		}
+        if (user.EmailConfirmationCodeExpiry < DateTime.UtcNow)
+            throw new InvalidOperationException("Code de confirmation expiré");
 
-		var user = await _userManager.FindByEmailAsync(email);
-		if (user == null)
-		{
-			return null;
-		}
+        if (!string.Equals(user.EmailConfirmationCode, code, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Code de confirmation invalide");
 
-		var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-		await _emailService.SendAsync(email, "Reset password", $"Your reset token: {token}");
-		return token;
-	}
+        user.EmailConfirmed = true;
+        user.EmailConfirmationCode = null;
+        user.EmailConfirmationCodeExpiry = null;
+        await _userManager.UpdateAsync(user);
+    }
 
-	public async Task ResetPasswordAsync(ResetPasswordRequest request)
-	{
-		ResetPasswordRequestValidator.ValidateAndThrow(request);
-		var email = request.Email?.Trim();
-		if (string.IsNullOrWhiteSpace(email))
-		{
-			throw new IdentityException("Email is required.", 400);
-		}
+    public async Task ResendConfirmationCodeAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
+            throw new InvalidOperationException("Utilisateur non trouvé");
 
-		var user = await _userManager.FindByEmailAsync(email);
-		if (user == null)
-		{
-			throw new IdentityException("Invalid reset request.", 400);
-		}
+        if (user.EmailConfirmed)
+            throw new InvalidOperationException("Email déjà confirmé");
 
-		var result = await _userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
-		if (!result.Succeeded)
-		{
-			var message = string.Join(" ", result.Errors.Select(error => error.Description));
-			throw new IdentityException(message, 400);
-		}
-	}
+        var code = GenerateCode();
+        user.EmailConfirmationCode = code;
+        user.EmailConfirmationCodeExpiry = DateTime.UtcNow.AddMinutes(15);
+        await _userManager.UpdateAsync(user);
 
-	public async Task VerifyEmailAsync(VerifyEmailRequest request)
-	{
-		var email = request.Email?.Trim();
-		if (string.IsNullOrWhiteSpace(email))
-		{
-			throw new IdentityException("Email is required.", 400);
-		}
+        await SendConfirmationEmailAsync(user, code);
+    }
 
-		var user = await _userManager.FindByEmailAsync(email);
-		if (user == null)
-		{
-			throw new IdentityException("Invalid verification request.", 400);
-		}
+    public async Task<(ApplicationUser user, IList<string> roles)> HandleExternalLoginAsync(string provider)
+    {
+        var info = await _signInManager.GetExternalLoginInfoAsync();
+        if (info == null)
+            throw new InvalidOperationException("Erreur lors du login externe");
 
-		var result = await _userManager.ConfirmEmailAsync(user, request.Token);
-		if (!result.Succeeded)
-		{
-			var message = string.Join(" ", result.Errors.Select(error => error.Description));
-			throw new IdentityException(message, 400);
-		}
-	}
+        var result = await _signInManager.ExternalLoginSignInAsync(
+            info.LoginProvider, info.ProviderKey, isPersistent: false);
+        if (result.Succeeded)
+        {
+            var user = await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey);
+            var roles = await _userManager.GetRolesAsync(user!);
+            _tenantContext.TenantId = user!.TenantId;
+            return (user, roles)!;
+        }
 
-	private async Task<TokenDto> CreateTokenAsync(ApplicationUser user)
-	{
-		var accessToken = await _jwtTokenGenerator.GenerateAccessTokenAsync(user);
-		var refreshTokenValue = _refreshTokenGenerator.GenerateToken();
-		var refreshToken = new RefreshToken
-		{
-			UserId = user.Id,
-			Token = refreshTokenValue,
-			ExpiresAt = DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenDays)
-		};
+        var email = info.Principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        if (string.IsNullOrEmpty(email))
+            throw new InvalidOperationException("Email requis pour le login externe");
 
-		_dbContext.RefreshTokens.Add(refreshToken);
-		await _dbContext.SaveChangesAsync();
+        var existingUser = await _userManager.FindByEmailAsync(email);
+        if (existingUser != null)
+        {
+            await _userManager.AddLoginAsync(existingUser, info);
+            existingUser.EmailConfirmed = true;
+            await _userManager.UpdateAsync(existingUser);
+            var roles = await _userManager.GetRolesAsync(existingUser);
+            _tenantContext.TenantId = existingUser.TenantId;
+            return (existingUser, roles);
+        }
 
-		return new TokenDto
-		{
-			AccessToken = accessToken,
-			RefreshToken = refreshTokenValue,
-			ExpiresIn = _jwtOptions.AccessTokenMinutes * 60,
-			TokenType = "Bearer"
-		};
-	}
+        var tenant = await _db.Tenants.FirstOrDefaultAsync();
+        if (tenant == null)
+            throw new InvalidOperationException("Aucun tenant configuré");
 
-	private async Task<UserDto> MapUserAsync(ApplicationUser user)
-	{
-		var roles = await _userManager.GetRolesAsync(user);
-		var socialLinks = await _dbContext.SocialLinks
-			.Where(link => link.UserId == user.Id)
-			.Select(link => new SocialLinkDto
-			{
-				Id = link.Id,
-				Platform = link.Platform,
-				Url = link.Url
-			})
-			.ToListAsync();
+        var newUser = new ApplicationUser
+        {
+            UserName = email, Email = email, EmailConfirmed = true,
+            TenantId = tenant.Id,
+            FirstName = info.Principal.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value,
+            LastName = info.Principal.FindFirst(System.Security.Claims.ClaimTypes.Surname)?.Value
+        };
+        var createResult = await _userManager.CreateAsync(newUser);
+        if (!createResult.Succeeded)
+            throw new InvalidOperationException("Erreur création utilisateur");
 
-		return new UserDto
-		{
-			Id = user.Id,
-			Username = user.UserName ?? string.Empty,
-			Email = user.Email ?? string.Empty,
-			FullName = user.FullName,
-			Bio = user.Bio,
-			AvatarUrl = user.AvatarUrl,
-			Country = user.Country ?? string.Empty,
-			City = user.City ?? string.Empty,
-			IsActive = user.IsActive,
-			CreatedAt = user.CreatedAt,
-			LastLoginAt = user.LastLoginAt,
-			Roles = roles.ToList(),
-			SocialLinks = socialLinks
-		};
-	}
+        await _userManager.AddLoginAsync(newUser, info);
+        await _userManager.AddToRoleAsync(newUser, "User");
+        _tenantContext.TenantId = newUser.TenantId;
+        return (newUser, new List<string> { "User" });
+    }
+
+    private static string GenerateCode()
+    {
+        var bytes = RandomNumberGenerator.GetBytes(6);
+        var code = new char[6];
+        for (int i = 0; i < 6; i++)
+            code[i] = CodeChars[bytes[i] % CodeChars.Length];
+        return new string(code);
+    }
+
+    private async Task SendConfirmationEmailAsync(ApplicationUser user, string code)
+    {
+        if (!string.IsNullOrEmpty(_smtp.Host))
+        {
+            var confirmUrl = $"{_smtp.AppBaseUrl}/api/v1/auth/confirm-email?email={Uri.EscapeDataString(user.Email!)}&code={Uri.EscapeDataString(code)}";
+            await _emailSender.SendConfirmationLinkAsync(user, user.Email!, confirmUrl);
+
+            if (_emailSender is EmailSender typed)
+                await typed.SendConfirmationCodeAsync(user, user.Email!, code, confirmUrl);
+        }
+    }
 }

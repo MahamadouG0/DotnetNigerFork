@@ -1,51 +1,48 @@
-// Middleware API Identity: ErrorHandlingMiddleware
 using System.Net;
 using System.Text.Json;
-using DotnetNiger.Identity.Application.Exceptions;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Logging;
+using DotnetNiger.Identity.Application.DTOs;
 
 namespace DotnetNiger.Identity.Api.Middleware;
 
-// Middleware de gestion globale des erreurs.
 public class ErrorHandlingMiddleware
 {
-	private readonly RequestDelegate _next;
-	private readonly ILogger<ErrorHandlingMiddleware> _logger;
+    private readonly RequestDelegate _next;
+    private readonly ILogger<ErrorHandlingMiddleware> _logger;
 
-	public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
-	{
-		_next = next;
-		_logger = logger;
-	}
+    public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
+    {
+        _next = next;
+        _logger = logger;
+    }
 
-	public async Task Invoke(HttpContext context)
-	{
-		try
-		{
-			await _next(context);
-		}
-		catch (IdentityException ex)
-		{
-			_logger.LogWarning(ex, "Identity error");
-			await WriteErrorAsync(context, ex.StatusCode, ex.Message);
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError(ex, "Unhandled error");
-			await WriteErrorAsync(context, (int)HttpStatusCode.InternalServerError, "An unexpected error occurred.");
-		}
-	}
+    public async Task InvokeAsync(HttpContext context)
+    {
+        try
+        {
+            await _next(context);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unhandled exception: {Message}", ex.Message);
+            await HandleExceptionAsync(context, ex);
+        }
+    }
 
-	private static Task WriteErrorAsync(HttpContext context, int statusCode, string message)
-	{
-		context.Response.ContentType = "application/json";
-		context.Response.StatusCode = statusCode;
-		var payload = JsonSerializer.Serialize(new
-		{
-			status = statusCode,
-			error = message
-		});
-		return context.Response.WriteAsync(payload);
-	}
+    private static async Task HandleExceptionAsync(HttpContext context, Exception ex)
+    {
+        var (statusCode, response) = ex switch
+        {
+            KeyNotFoundException => (HttpStatusCode.NotFound, new ErrorResponse(ex.Message, "NOT_FOUND")),
+            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, new ErrorResponse(ex.Message, "UNAUTHORIZED")),
+            InvalidOperationException => (HttpStatusCode.BadRequest, new ErrorResponse(ex.Message, "INVALID_OPERATION")),
+            _ => (HttpStatusCode.InternalServerError, new ErrorResponse("Une erreur interne s'est produite", "INTERNAL_ERROR"))
+        };
+
+        context.Response.ContentType = "application/json";
+        context.Response.StatusCode = (int)statusCode;
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        }));
+    }
 }

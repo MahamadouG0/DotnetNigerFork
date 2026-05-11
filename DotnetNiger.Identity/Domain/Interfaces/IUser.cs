@@ -1,1 +1,0 @@
-// Contrat domaine Identity: IUser
