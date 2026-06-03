@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using DotnetNiger.Community.Application.DTOs;
 using DotnetNiger.Community.Application.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -6,7 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace DotnetNiger.Community.Api.Controllers;
 
 [ApiController]
-[Route("api/v1/admin")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/admin")]
 [Authorize(Roles = "Admin")]
 public class AdminController(IAdminService adminService, IEventService eventService) : ControllerBase
 {

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using DotnetNiger.Identity.Application.DTOs;
+using DotnetNiger.Identity.Application.Exceptions;
 
 namespace DotnetNiger.Identity.Api.Middleware;
 
@@ -32,6 +33,8 @@ public class ErrorHandlingMiddleware
     {
         var (statusCode, response) = ex switch
         {
+            SlugAlreadyExistsException => (HttpStatusCode.Conflict, new ErrorResponse(ex.Message, "SLUG_EXISTS")),
+            EmailAlreadyExistsException => (HttpStatusCode.Conflict, new ErrorResponse(ex.Message, "EMAIL_EXISTS")),
             KeyNotFoundException => (HttpStatusCode.NotFound, new ErrorResponse(ex.Message, "NOT_FOUND")),
             UnauthorizedAccessException => (HttpStatusCode.Unauthorized, new ErrorResponse(ex.Message, "UNAUTHORIZED")),
             InvalidOperationException => (HttpStatusCode.BadRequest, new ErrorResponse(ex.Message, "INVALID_OPERATION")),

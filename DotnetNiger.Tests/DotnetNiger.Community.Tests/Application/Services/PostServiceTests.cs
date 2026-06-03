@@ -1,192 +1,59 @@
 using DotnetNiger.Community.Application.DTOs;
 using DotnetNiger.Community.Application.Services;
 using DotnetNiger.Community.Domain.Entities;
-using DotnetNiger.Community.Domain.Interfaces;
+using DotnetNiger.Community.Infrastructure;
 using FluentAssertions;
-using Moq;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace DotnetNiger.Community.Tests.Application.Services;
 
 public class PostServiceTests
 {
-    private readonly Mock<IPostRepository> _postRepositoryMock;
-    private readonly PostService _postService;
-
-    public PostServiceTests()
+    private static AppDbContext CreateDb()
     {
-        _postRepositoryMock = new Mock<IPostRepository>();
-        _postService = new PostService(_postRepositoryMock.Object);
+        var opts = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        return new AppDbContext(opts);
     }
 
     [Fact]
-    public async Task GetAllPostsAsync_ReturnsAllPosts()
+    public async Task GetAllAsync_ReturnsPagedPosts()
     {
-        // Arrange
-        var posts = new List<Post>
-        {
-            new() { Id = "1", Title = "Post 1", Content = "Content 1", CreatedAt = DateTime.UtcNow },
-            new() { Id = "2", Title = "Post 2", Content = "Content 2", CreatedAt = DateTime.UtcNow }
-        };
+        var db = CreateDb();
+        db.Posts.AddRange(
+            new Post { Id = Guid.NewGuid(), Title = "P1", Slug = "p1", Content = "C1" },
+            new Post { Id = Guid.NewGuid(), Title = "P2", Slug = "p2", Content = "C2" });
+        await db.SaveChangesAsync();
 
-        _postRepositoryMock
-            .Setup(x => x.GetPagedAsync(
-                It.IsAny<Func<Post, bool>>(),
-                It.IsAny<int>(),
-                It.IsAny<int>()))
-            .ReturnsAsync((posts, posts.Count));
+        var svc = new PostService(db);
+        var result = await svc.GetAllAsync(null, null, null, null, 1, 10);
 
-        // Act
-        var result = await _postService.GetAllPostsAsync();
-
-        // Assert
-        result.Should().HaveCount(2);
-        result.Should().ContainItemsAssignableTo<PostDto>();
+        result.Items.Should().HaveCount(2);
+        result.TotalCount.Should().Be(2);
     }
 
     [Fact]
-    public async Task GetPostByIdAsync_WithValidId_ReturnsPost()
+    public async Task GetByIdAsync_ReturnsNull_WhenNotFound()
     {
-        // Arrange
-        var postId = "1";
-        var post = new Post
-        {
-            Id = postId,
-            Title = "Test Post",
-            Content = "Test Content",
-            CreatedAt = DateTime.UtcNow
-        };
+        var db = CreateDb();
+        var svc = new PostService(db);
+        var result = await svc.GetByIdAsync(Guid.NewGuid());
 
-        _postRepositoryMock
-            .Setup(x => x.GetByIdAsync(postId))
-            .ReturnsAsync(post);
-
-        // Act
-        var result = await _postService.GetPostByIdAsync(postId);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Title.Should().Be("Test Post");
-    }
-
-    [Fact]
-    public async Task GetPostByIdAsync_WithInvalidId_ReturnsNull()
-    {
-        // Arrange
-        var postId = "invalid";
-        _postRepositoryMock
-            .Setup(x => x.GetByIdAsync(postId))
-            .ReturnsAsync((Post?)null);
-
-        // Act
-        var result = await _postService.GetPostByIdAsync(postId);
-
-        // Assert
         result.Should().BeNull();
     }
 
     [Fact]
-    public async Task CreatePostAsync_WithValidRequest_CreatesPost()
+    public async Task CreateAsync_AddsPost()
     {
-        // Arrange
-        var request = new CreatePostDto
-        {
-            Title = "New Post",
-            Content = "New Content",
-            Category = "Technology"
-        };
+        var db = CreateDb();
+        var request = new CreatePostRequest { Title = "New Post", Content = "Content", PostType = "article" };
 
-        _postRepositoryMock
-            .Setup(x => x.AddAsync(It.IsAny<Post>()))
-            .Returns(Task.CompletedTask);
+        var svc = new PostService(db);
+        var result = await svc.CreateAsync(request, Guid.NewGuid(), "Author");
 
-        // Act
-        var result = await _postService.CreatePostAsync(request);
-
-        // Assert
-        result.Should().NotBeNull();
         result.Title.Should().Be("New Post");
-        _postRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Post>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task UpdatePostAsync_WithValidId_UpdatesPost()
-    {
-        // Arrange
-        var postId = "1";
-        var existingPost = new Post
-        {
-            Id = postId,
-            Title = "Old Title",
-            Content = "Old Content"
-        };
-
-        var updateRequest = new UpdatePostDto
-        {
-            Title = "New Title",
-            Content = "New Content"
-        };
-
-        _postRepositoryMock
-            .Setup(x => x.GetByIdAsync(postId))
-            .ReturnsAsync(existingPost);
-
-        _postRepositoryMock
-            .Setup(x => x.UpdateAsync(It.IsAny<Post>()))
-            .Returns(Task.CompletedTask);
-
-        // Act
-        var result = await _postService.UpdatePostAsync(postId, updateRequest);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Title.Should().Be("New Title");
-        _postRepositoryMock.Verify(x => x.UpdateAsync(It.IsAny<Post>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task DeletePostAsync_WithValidId_DeletesPost()
-    {
-        // Arrange
-        var postId = "1";
-        var post = new Post { Id = postId, Title = "Test", Content = "Test" };
-
-        _postRepositoryMock
-            .Setup(x => x.GetByIdAsync(postId))
-            .ReturnsAsync(post);
-
-        _postRepositoryMock
-            .Setup(x => x.DeleteAsync(post))
-            .Returns(Task.CompletedTask);
-
-        // Act
-        await _postService.DeletePostAsync(postId);
-
-        // Assert
-        _postRepositoryMock.Verify(x => x.DeleteAsync(post), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetPostsByCategoryAsync_ReturnsFilteredPosts()
-    {
-        // Arrange
-        var category = "Technology";
-        var posts = new List<Post>
-        {
-            new() { Id = "1", Title = "Tech Post", Category = category, CreatedAt = DateTime.UtcNow }
-        };
-
-        _postRepositoryMock
-            .Setup(x => x.GetPagedAsync(
-                It.IsAny<Func<Post, bool>>(),
-                It.IsAny<int>(),
-                It.IsAny<int>()))
-            .ReturnsAsync((posts, posts.Count));
-
-        // Act
-        var result = await _postService.GetPostsByCategoryAsync(category);
-
-        // Assert
-        result.Should().HaveCount(1);
+        db.Posts.Count().Should().Be(1);
     }
 }

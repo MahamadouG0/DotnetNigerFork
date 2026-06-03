@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DotnetNiger.Identity.Api.Controllers;
 
+/// <summary>Health check et diagnostics du service Identity.</summary>
 [ApiController]
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/diagnostics")]

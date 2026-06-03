@@ -1,122 +1,489 @@
-# Guide d'Intégration — DotnetNiger.Community
+# Integration Guide — DotnetNiger.Community
 
-API publique de la communauté DotnetNiger — Posts, Events, Resources, Comments, Search, Profile, Admin.
+Complete guide for integrating with the DotnetNiger Community API — posts, events, resources, comments, newsletters, member profiles, and administration.
 
-## Prérequis
+## Table of Contents
 
-- .NET 9.0+
-- [DotnetNiger.Identity](https://github.com/akaletekoffilevis/DotnetNiger) en cours d'exécution sur `http://localhost:5075`
-- JWT Bearer token obtenu via Identity (`/connect/token`)
+1. [Prerequisites](#1-prerequisites)
+2. [Architecture](#2-architecture)
+3. [Authentication](#3-authentication)
+4. [Posts](#4-posts)
+5. [Events](#5-events)
+6. [Resources](#6-resources)
+7. [Comments](#7-comments)
+8. [Member Profile](#8-member-profile)
+9. [Newsletters](#9-newsletters)
+10. [Search](#10-search)
+11. [Admin](#11-admin)
+12. [Response Format](#12-response-format)
+13. [Complete cURL Examples](#13-complete-curl-examples)
+14. [Error Handling](#14-error-handling)
 
-## Architecture
+---
+
+## 1. Prerequisites
+
+- .NET 9.0+ SDK
+- [DotnetNiger.Identity](https://github.com/akaletekoffilevis/DotnetNiger) running on `http://localhost:5075`
+- JWT Bearer token obtained from Identity (`/connect/token`)
+
+---
+
+## 2. Architecture
 
 ```
-DotnetNiger.Community/
-├── Api/
-│   ├── Controllers/       → 7 controllers (versionnés /api/v1/)
-│   ├── Middleware/         → Error handling
-│   └── ServiceExtensions.cs → DI registration
-├── Application/
-│   ├── DTOs/              → Request/Response DTOs
-│   └── Services/          → Business logic + IdentityApiClient
-├── Domain/
-│   └── Entities/          → 13 entités (Post, Event, Comment, etc.)
-├── Infrastructure/
-│   └── AppDbContext.cs    → EF Core DbContext (SQLite)
-└── Program.cs
+Client → Gateway (:5000) → Community (:5269 / :8082)
+                              │
+                              ▼
+                         Identity (:5075)
+                      (JWT validation, user mgmt)
 ```
 
-## Démarrage
+In development, you can call Community directly on `http://localhost:5269`. In production, always go through the Gateway at `http://localhost:5000`.
+
+---
+
+## 3. Authentication
+
+### Obtain a Token
 
 ```bash
-cd DotnetNiger.Community
-dotnet run
+TOKEN=$(curl -s -X POST http://localhost:5075/connect/token \
+  -d "grant_type=password&username=admin@dotnetniger.com&password=Admin@123456&scope=openid+profile+email+roles+offline_access" \
+  | jq -r '.access_token')
 ```
 
-Service disponible sur `http://localhost:5000`.
-Swagger UI : `http://localhost:5000/` (développement uniquement).
+### Use the Token
 
-## Endpoints disponibles
+```bash
+curl -s http://localhost:5269/api/v1/admin/dashboard \
+  -H "Authorization: Bearer $TOKEN"
+```
 
-### Posts
+### Token Claims
 
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/v1/Posts` | Non | Liste paginée des posts |
-| GET | `/api/v1/Posts/{id}` | Non | Détail d'un post |
-| POST | `/api/v1/Posts` | Oui | Créer un post |
-| PUT | `/api/v1/Posts/{id}` | Oui | Modifier un post |
+The JWT should contain:
 
-### Events
+- `sub` — User ID (Guid)
+- `name` / `full_name` — Display name
+- `email` — Email address
+- `roles` — Array of role names
+- `tenant_id` — Tenant identifier (for multi-tenant)
+- `is_admin` / `is_super_admin` — Admin flags
 
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/v1/Events` | Non | Liste paginée des événements |
-| GET | `/api/v1/Events/upcoming` | Non | Prochains événements |
-| GET | `/api/v1/Events/{id}` | Non | Détail d'un événement |
-| POST | `/api/v1/Events` | Oui | Créer un événement |
-| PUT | `/api/v1/Events/{id}` | Oui | Modifier un événement |
-| POST | `/api/v1/Events/{eventId}/registrations` | Oui | S'inscrire à un événement |
-| GET | `/api/v1/Events/registrations` | Oui | Mes inscriptions |
-| GET | `/api/v1/Events/{eventId}/registrations` | Oui | Inscriptions à un événement (admin) |
+---
 
-### Resources
+## 4. Posts
 
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/v1/Resources` | Non | Liste paginée des ressources |
-| GET | `/api/v1/Resources/{id}` | Non | Détail d'une ressource |
-| POST | `/api/v1/Resources` | Oui | Créer une ressource |
-| PUT | `/api/v1/Resources/{id}` | Oui | Modifier une ressource |
-| POST | `/api/v1/Resources/{id}/views` | Non | Incrémenter les vues |
+### List Posts (Public)
 
-### Comments
+```http
+GET /api/v1/Posts?page=1&pageSize=10&category=tech&tag=dotnet
+```
 
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/v1/Comments/post/{postId}` | Non | Commentaires d'un post |
-| GET | `/api/v1/Comments/event/{eventId}` | Non | Commentaires d'un événement |
-| GET | `/api/v1/Comments/{id}` | Non | Détail d'un commentaire |
-| POST | `/api/v1/Comments` | Oui | Créer un commentaire |
-| PUT | `/api/v1/Comments/{id}` | Oui | Modifier un commentaire |
-| DELETE | `/api/v1/Comments/{id}` | Oui | Supprimer un commentaire |
+Optional query parameters: `page`, `pageSize`, `category`, `tag`, `search`, `sortBy`, `sortOrder`.
 
-### Profile
+### Get Post by ID (Public)
 
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/v1/me` | Oui | Mon profil (membre) |
-| PUT | `/api/v1/me` | Oui | Mettre à jour mon profil |
-| GET | `/api/v1/social-links` | Oui | Mes liens sociaux |
-| POST | `/api/v1/social-links` | Oui | Ajouter un lien social |
-| DELETE | `/api/v1/social-links/{id}` | Oui | Supprimer un lien social |
+```http
+GET /api/v1/Posts/{id}
+```
 
-### Search
+### Create Post (Authenticated)
 
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/v1/Search?q=...` | Non | Recherche globale (posts, events, resources) |
+```http
+POST /api/v1/Posts
+Authorization: Bearer <token>
+Content-Type: application/json
 
-### Admin
+{
+  "title": "Getting Started with .NET 9",
+  "content": "Full markdown content...",
+  "excerpt": "Short description...",
+  "coverImageUrl": "https://example.com/image.jpg",
+  "category": "tech",
+  "tags": ["dotnet", "csharp"],
+  "isPublished": true
+}
+```
 
-| Méthode | Endpoint | Auth | Description |
-|---------|----------|------|-------------|
-| GET | `/api/v1/admin/dashboard` | Admin | Statistiques du dashboard |
-| GET | `/api/v1/admin/users` | Admin | Liste des utilisateurs |
-| GET | `/api/v1/admin/users/{id}` | Admin | Détail d'un utilisateur |
-| PATCH | `/api/v1/admin/users/{id}/status` | Admin | Activer/désactiver un utilisateur |
-| GET | `/api/v1/admin/roles` | Admin | Liste des rôles |
-| POST | `/api/v1/admin/roles` | Admin | Créer un rôle |
-| GET | `/api/v1/admin/permissions` | Admin | Liste des permissions |
-| POST | `/api/v1/admin/permissions` | Admin | Créer une permission |
-| POST | `/api/v1/admin/roles/{roleId}/permissions` | Admin | Assigner des permissions à un rôle |
-| POST | `/api/v1/admin/users/{userId}/roles` | Admin | Assigner un rôle à un utilisateur |
-| PATCH | `/api/v1/admin/events/{id}/publish` | Admin | Publier un événement |
-| PATCH | `/api/v1/admin/events/{id}/unpublish` | Admin | Dépublier un événement |
+### Update Post (Authenticated — Owner or Admin)
 
-## Format des réponses
+```http
+PUT /api/v1/Posts/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
 
-Tous les endpoints retournent une réponse uniforme :
+{
+  "title": "Updated Title",
+  "content": "Updated content..."
+}
+```
+
+### Delete Post (Authenticated — Owner or Admin)
+
+```http
+DELETE /api/v1/Posts/{id}
+Authorization: Bearer <token>
+```
+
+---
+
+## 5. Events
+
+### List Events (Public)
+
+```http
+GET /api/v1/Events?page=1&pageSize=10&upcoming=true
+```
+
+### Get Upcoming Events (Public)
+
+```http
+GET /api/v1/Events/upcoming
+```
+
+### Get Event by ID (Public)
+
+```http
+GET /api/v1/Events/{id}
+```
+
+### Create Event (Authenticated)
+
+```http
+POST /api/v1/Events
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "Dotnet Niger Meetup March 2026",
+  "description": "Full description...",
+  "startDate": "2026-03-20T18:00:00Z",
+  "endDate": "2026-03-20T20:00:00Z",
+  "location": "Virtual / Zoom",
+  "maxAttendees": 100,
+  "coverImageUrl": "https://example.com/event.jpg",
+  "tags": ["meetup", "dotnet"],
+  "isPublished": false
+}
+```
+
+### Register for Event (Authenticated)
+
+```http
+POST /api/v1/Events/registrations
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "eventId": "guid-...",
+  "notes": "Looking forward to it!"
+}
+```
+
+### Cancel Registration (Authenticated)
+
+```http
+DELETE /api/v1/Events/{eventId}/registrations
+Authorization: Bearer <token>
+```
+
+### List Event Registrations (Authenticated — Event Owner or Admin)
+
+```http
+GET /api/v1/Events/{eventId}/registrations
+Authorization: Bearer <token>
+```
+
+---
+
+## 6. Resources
+
+### List Resources (Public)
+
+```http
+GET /api/v1/Resources?page=1&pageSize=10&category=tutorial
+```
+
+### Get Resource by ID (Public)
+
+```http
+GET /api/v1/Resources/{id}
+```
+
+### Create Resource (Authenticated)
+
+```http
+POST /api/v1/Resources
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "title": "Awesome .NET Library",
+  "description": "Description...",
+  "url": "https://github.com/example/library",
+  "type": "github",
+  "category": "tools",
+  "tags": ["dotnet", "opensource"]
+}
+```
+
+### Increment View Count (Public)
+
+```http
+POST /api/v1/Resources/{id}/views
+```
+
+---
+
+## 7. Comments
+
+### Get Comments for a Post (Public)
+
+```http
+GET /api/v1/Comments/post/{postId}
+```
+
+### Get Comments for an Event (Public)
+
+```http
+GET /api/v1/Comments/event/{eventId}
+```
+
+### Get Comment by ID (Public)
+
+```http
+GET /api/v1/Comments/{id}
+```
+
+### Create Comment (Authenticated)
+
+```http
+POST /api/v1/Comments
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "postId": "guid-...",        // or eventId
+  "content": "Great article!",
+  "parentCommentId": null     // for replies
+}
+```
+
+### Update Comment (Authenticated — Owner)
+
+```http
+PUT /api/v1/Comments/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "content": "Updated comment..."
+}
+```
+
+### Delete Comment (Authenticated — Owner)
+
+```http
+DELETE /api/v1/Comments/{id}
+Authorization: Bearer <token>
+```
+
+Supports `?deleteAllReplies=true` to cascade delete.
+
+---
+
+## 8. Member Profile
+
+### Get My Profile (Authenticated)
+
+```http
+GET /api/v1/me
+Authorization: Bearer <token>
+```
+
+### Update My Profile (Authenticated)
+
+```http
+PUT /api/v1/me
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "bio": "Full-stack developer passionate about .NET",
+  "website": "https://example.com",
+  "location": "Niamey, Niger",
+  "skills": ["dotnet", "csharp", "azure"],
+  "avatarUrl": "https://example.com/avatar.jpg"
+}
+```
+
+### List Social Links (Authenticated)
+
+```http
+GET /api/v1/social-links
+Authorization: Bearer <token>
+```
+
+### Add Social Link (Authenticated)
+
+```http
+POST /api/v1/social-links
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "platform": "github",
+  "url": "https://github.com/username"
+}
+```
+
+### Delete Social Link (Authenticated)
+
+```http
+DELETE /api/v1/social-links/{id}
+Authorization: Bearer <token>
+```
+
+---
+
+## 9. Newsletters
+
+### Subscribe (Public)
+
+```http
+POST /api/v1/newsletters/subscribe
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "firstName": "Jean",
+  "tags": ["events", "news"]
+}
+```
+
+### Quick Subscribe (Public)
+
+```http
+POST /api/v1/newsletters/quick-subscribe
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+### Verify Subscription (Public)
+
+```http
+POST /api/v1/newsletters/verify
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "token": "verification-token"
+}
+```
+
+### Unsubscribe (Public)
+
+```http
+POST /api/v1/newsletters/unsubscribe
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+### List Subscriptions (Admin)
+
+```http
+GET /api/v1/newsletters/subscriptions
+Authorization: Bearer <admin-token>
+```
+
+### Manage Subscription (Admin)
+
+```http
+PATCH /api/v1/newsletters/subscriptions/{id}
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "status": "active",
+  "tags": ["events", "news", "jobs"]
+}
+```
+
+---
+
+## 10. Search
+
+### Full-Text Search (Public)
+
+```http
+GET /api/v1/Search?q=dotnet&type=posts&page=1&pageSize=10
+```
+
+Parameters:
+
+- `q` — Search query (required)
+- `type` — Filter by type: `posts`, `events`, `resources`, or all (default)
+- `page`, `pageSize` — Pagination
+
+---
+
+## 11. Admin
+
+Admin endpoints require the `Admin` role in the JWT.
+
+### Dashboard
+
+```http
+GET /api/v1/admin/dashboard
+Authorization: Bearer <admin-token>
+```
+
+Returns: counts of users, posts, events, resources, recent activity.
+
+### User Management
+
+```http
+GET /api/v1/admin/users                    # List users
+GET /api/v1/admin/users/{id}               # Get user
+PATCH /api/v1/admin/users/{id}/status      # Activate/deactivate
+
+PATCH /api/v1/admin/users/{id}/status
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+```
+
+### Role Management
+
+```http
+GET  /api/v1/admin/roles                   # List roles
+POST /api/v1/admin/roles                   # Create role
+POST /api/v1/admin/roles/{roleId}/permissions   # Assign permissions to role
+POST /api/v1/admin/users/{userId}/roles         # Assign role to user
+```
+
+### Event Moderation
+
+```http
+PATCH /api/v1/admin/events/{id}/publish      # Publish event
+PATCH /api/v1/admin/events/{id}/unpublish    # Unpublish event
+```
+
+---
+
+## 12. Response Format
+
+### Success Response
 
 ```json
 {
@@ -125,58 +492,135 @@ Tous les endpoints retournent une réponse uniforme :
 }
 ```
 
-Pour les listes paginées :
+### Error Response
+
+```json
+{
+  "success": false,
+  "message": "Description of the error"
+}
+```
+
+### Paginated Response
 
 ```json
 {
   "success": true,
   "data": {
-    "items": [],
-    "totalCount": 0,
+    "items": [
+      { "id": "guid-1", "title": "Post 1", ... },
+      { "id": "guid-2", "title": "Post 2", ... }
+    ],
+    "totalCount": 25,
     "page": 1,
     "pageSize": 10,
-    "totalPages": 0,
-    "hasNextPage": false,
+    "totalPages": 3,
+    "hasNextPage": true,
     "hasPreviousPage": false
   }
 }
 ```
 
-## Authentification
+---
 
-Les endpoints `Auth` utilisent le JWT Bearer. Obtenez un token depuis Identity :
+## 13. Complete cURL Examples
 
 ```bash
-TOKEN=$(curl -s -X POST http://localhost:5075/connect/token \
+#!/bin/bash
+
+# ──────────────────────────────────────────────
+# Configuration
+# ──────────────────────────────────────────────
+IDENTITY_URL="http://localhost:5075"
+COMMUNITY_URL="http://localhost:5269"
+GATEWAY_URL="http://localhost:5000"
+
+# ──────────────────────────────────────────────
+# 1. Get admin token from Identity
+# ──────────────────────────────────────────────
+TOKEN=$(curl -s -X POST "$IDENTITY_URL/connect/token" \
   -d "grant_type=password&username=admin@dotnetniger.com&password=Admin@123456&scope=openid+profile+email+roles+offline_access" \
   | jq -r '.access_token')
+echo "Token obtained: ${TOKEN:0:50}..."
 
-curl -s http://localhost:5000/api/v1/admin/dashboard \
-  -H "Authorization: Bearer $TOKEN"
+# ──────────────────────────────────────────────
+# 2. Create a post (via Gateway)
+# ──────────────────────────────────────────────
+curl -s -X POST "$GATEWAY_URL/api/posts" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Hello .NET Niger!",
+    "content": "Welcome to our community platform.",
+    "excerpt": "First post",
+    "category": "announcement",
+    "tags": ["welcome"],
+    "isPublished": true
+  }' | jq .
+
+# ──────────────────────────────────────────────
+# 3. List public posts (no auth needed)
+# ──────────────────────────────────────────────
+curl -s "$GATEWAY_URL/api/posts?page=1&pageSize=5" | jq .
+
+# ──────────────────────────────────────────────
+# 4. Create an event
+# ──────────────────────────────────────────────
+curl -s -X POST "$GATEWAY_URL/api/events" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Community Meetup April 2026",
+    "description": "Monthly community meetup",
+    "startDate": "2026-04-15T18:00:00Z",
+    "endDate": "2026-04-15T20:00:00Z",
+    "location": "Virtual",
+    "maxAttendees": 50,
+    "isPublished": true
+  }' | jq .
+
+# ──────────────────────────────────────────────
+# 5. Search
+# ──────────────────────────────────────────────
+curl -s "$GATEWAY_URL/api/search?q=.NET&type=all" | jq .
+
+# ──────────────────────────────────────────────
+# 6. Admin dashboard
+# ──────────────────────────────────────────────
+curl -s "$GATEWAY_URL/api/community/admin/dashboard" \
+  -H "Authorization: Bearer $TOKEN" | jq .
+
+# ──────────────────────────────────────────────
+# 7. Check health (via Gateway)
+# ──────────────────────────────────────────────
+curl -s "$GATEWAY_URL/health/downstream" | jq .
 ```
 
-## Configuration
+---
 
-Dans `appsettings.json` :
+## 14. Error Handling
+
+The Gateway includes an `ErrorHandlingMiddleware` that catches unhandled exceptions and returns structured problem+json responses:
 
 ```json
 {
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=DotnetNigerCommunity.db"
-  },
-  "Jwt": {
-    "Authority": "http://localhost:5075",
-    "MetadataAddress": "http://localhost:5075/.well-known/openid-configuration"
-  },
-  "Identity": {
-    "BaseUrl": "http://localhost:5075"
-  }
+  "type": "https://httpstatuses.io/500",
+  "title": "Internal Server Error",
+  "status": 500,
+  "detail": "An unexpected error occurred",
+  "instance": "/api/v1/posts"
 }
 ```
 
-## Compte admin de test
+### HTTP Status Codes
 
-- **Email :** `admin@dotnetniger.com`
-- **Mot de passe :** `Admin@123456`
-
-(Utilisateur créé par Identity via son DbSeeder.)
+| Code | Description                          |
+| ---- | ------------------------------------ |
+| 200  | Success                              |
+| 201  | Created                              |
+| 400  | Bad Request (validation error)       |
+| 401  | Unauthorized (missing/invalid token) |
+| 403  | Forbidden (insufficient permissions) |
+| 404  | Not Found                            |
+| 429  | Too Many Requests (rate limited)     |
+| 500  | Internal Server Error                |

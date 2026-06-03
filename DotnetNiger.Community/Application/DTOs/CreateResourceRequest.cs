@@ -20,4 +20,5 @@ public class CreateResourceRequest
     public string Level { get; set; } = string.Empty;
 
     public List<Guid> CategoryIds { get; set; } = [];
+    public List<string> TagNames { get; set; } = [];
 }

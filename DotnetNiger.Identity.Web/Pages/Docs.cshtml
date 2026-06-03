@@ -1,0 +1,102 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.DocsModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    ViewData["Title"] = "Documentation";
+    var identityUrl = (Configuration["Identity:BaseUrl"] ?? "https://localhost:7075").TrimEnd('/');
+}
+<div class="container py-5" style="max-width:900px;">
+    <h1 class="fw-bold mb-2">Documentation</h1>
+    <p class="text-muted mb-5">Tout ce qu'il faut savoir pour intégrer DotnetNiger.</p>
+
+    <h5 class="fw-bold" id="demarrage">Démarrage rapide</h5>
+    <p class="text-muted">Créez un compte, générez une clé API et commencez à faire des appels en moins de 5 minutes.</p>
+    <div class="bg-dark rounded-4 p-4 mb-5 shadow-sm">
+        <div class="d-flex gap-2 mb-3 align-items-center">
+            <span class="badge bg-success">bash</span>
+            <span class="small text-white-50">Créer un compte</span>
+        </div>
+        <pre class="mb-0" style="color:#a8d8ff;font-size:0.9rem;"><code>curl -X POST @identityUrl/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "dev@example.com", "password": "monMotDePasse"}'</code></pre>
+    </div>
+
+    <h5 class="fw-bold" id="authentification">Authentification</h5>
+    <p class="text-muted">DotnetNiger utilise OAuth 2.0 avec des tokens JWT. Incluez votre clé API dans l'en-tête <code>X-API-Key</code>.</p>
+    <div class="bg-dark rounded-4 p-4 mb-5 shadow-sm">
+        <div class="d-flex gap-2 mb-3 align-items-center">
+            <span class="badge bg-primary">curl</span>
+            <span class="small text-white-50">Authentification</span>
+        </div>
+        <pre class="mb-0" style="color:#a8d8ff;font-size:0.9rem;"><code>curl -X POST @identityUrl/api/auth/login \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: dni_votre_cle_api" \
+  -d '{"email": "dev@example.com"}'</code></pre>
+    </div>
+
+    <h5 class="fw-bold" id="endpoints">Endpoints principaux</h5>
+    <div class="table-responsive mb-5">
+        <table class="table table-bordered">
+            <thead class="table-light"><tr><th>Méthode</th><th>Endpoint</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/auth/login</code></td><td>Authentification utilisateur</td></tr>
+                <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/register</code></td><td>Création de compte</td></tr>
+                <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/me</code></td><td>Profil utilisateur</td></tr>
+                <tr><td><span class="badge bg-warning text-dark">PUT</span></td><td><code>/api/me</code></td><td>Mise à jour du profil</td></tr>
+                <tr><td><span class="badge bg-primary">GET</span></td><td><code>/api/api-keys</code></td><td>Liste des clés API</td></tr>
+                <tr><td><span class="badge bg-success">POST</span></td><td><code>/api/api-keys</code></td><td>Créer une clé API</td></tr>
+                <tr><td><span class="badge bg-danger">DELETE</span></td><td><code>/api/api-keys/{id}</code></td><td>Révoquer une clé API</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h5 class="fw-bold" id="exemples">Exemples par langage</h5>
+
+    <h6 class="fw-bold mt-4">Node.js</h6>
+    <div class="bg-dark rounded-4 p-4 mb-4 shadow-sm">
+        <pre class="mb-0" style="color:#a8d8ff;font-size:0.9rem;"><code>const axios = require('axios');
+
+const api = axios.create({
+  baseURL: '@identityUrl',
+  headers: { 'X-API-Key': 'dni_votre_cle_api' }
+});
+
+const res = await api.post('/api/auth/login', {
+  email: 'dev@example.com'
+});
+console.log(res.data.token);</code></pre>
+    </div>
+
+    <h6 class="fw-bold mt-4">.NET</h6>
+    <div class="bg-dark rounded-4 p-4 mb-4 shadow-sm">
+        <pre class="mb-0" style="color:#a8d8ff;font-size:0.9rem;"><code>var client = new HttpClient();
+client.DefaultRequestHeaders.Add(
+    "X-API-Key", "dni_votre_cle_api");
+
+var body = new StringContent(
+    JsonSerializer.Serialize(
+        new { email = "dev@example.com" }),
+    Encoding.UTF8, "application/json");
+
+var response = await client.PostAsync(
+    "@identityUrl/api/auth/login", body);</code></pre>
+    </div>
+
+    <h6 class="fw-bold mt-4">Python</h6>
+    <div class="bg-dark rounded-4 p-4 mb-5 shadow-sm">
+        <pre class="mb-0" style="color:#a8d8ff;font-size:0.9rem;"><code>import requests
+
+headers = {"X-API-Key": "dni_votre_cle_api"}
+data = {"email": "dev@example.com"}
+
+r = requests.post(
+    "@identityUrl/api/auth/login",
+    headers=headers, json=data
+)
+print(r.json()["token"])</code></pre>
+    </div>
+
+    <h5 class="fw-bold" id="swagger">Documentation interactive</h5>
+    <p class="text-muted">Accédez à la documentation Swagger complète pour tester tous les endpoints en direct :</p>
+    <a href="@identityUrl/swagger" target="_blank" class="btn btn-primary rounded-3"><i class="bi bi-box-arrow-up-right me-2"></i>Ouvrir Swagger</a>
+</div>

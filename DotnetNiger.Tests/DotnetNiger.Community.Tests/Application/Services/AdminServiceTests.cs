@@ -1,8 +1,9 @@
 using DotnetNiger.Community.Application.DTOs;
 using DotnetNiger.Community.Application.Services;
 using DotnetNiger.Community.Domain.Entities;
-using DotnetNiger.Community.Domain.Interfaces;
+using DotnetNiger.Community.Infrastructure;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using Xunit;
 
@@ -10,109 +11,45 @@ namespace DotnetNiger.Community.Tests.Application.Services;
 
 public class AdminServiceTests
 {
-    private readonly Mock<IPostRepository> _postRepositoryMock;
-    private readonly Mock<ICommentRepository> _commentRepositoryMock;
-    private readonly Mock<IEventRepository> _eventRepositoryMock;
-    private readonly Mock<IResourceRepository> _resourceRepositoryMock;
-    private readonly Mock<IProjectRepository> _projectRepositoryMock;
-    private readonly AdminService _adminService;
-
-    public AdminServiceTests()
+    private static AppDbContext CreateDb()
     {
-        _postRepositoryMock = new Mock<IPostRepository>();
-        _commentRepositoryMock = new Mock<ICommentRepository>();
-        _eventRepositoryMock = new Mock<IEventRepository>();
-        _resourceRepositoryMock = new Mock<IResourceRepository>();
-        _projectRepositoryMock = new Mock<IProjectRepository>();
-
-        _adminService = new AdminService(
-            _postRepositoryMock.Object,
-            _commentRepositoryMock.Object,
-            _eventRepositoryMock.Object,
-            _resourceRepositoryMock.Object,
-            _projectRepositoryMock.Object);
+        var opts = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        return new AppDbContext(opts);
     }
 
     [Fact]
-    public async Task GetDashboardAsync_ReturnsValidDashboard()
+    public async Task GetDashboardAsync_ReturnsCounts()
     {
-        // Arrange
-        _postRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(10);
-        _commentRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(5);
-        _eventRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(3);
-        _resourceRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(8);
-        _projectRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(2);
+        var db = CreateDb();
+        db.Posts.Add(new Post { Id = Guid.NewGuid(), Title = "P1", Slug = "p1", IsPublished = true });
+        db.Posts.Add(new Post { Id = Guid.NewGuid(), Title = "P2", Slug = "p2" });
+        db.Events.Add(new Event { Id = Guid.NewGuid(), Title = "E1", Slug = "e1" });
+        db.Resources.Add(new Resource { Id = Guid.NewGuid(), Title = "R1", Slug = "r1" });
+        db.Comments.Add(new Comment { Id = Guid.NewGuid(), Content = "C1", PostId = Guid.NewGuid() });
+        db.Members.Add(new Member { Id = Guid.NewGuid(), FullName = "M1" });
+        await db.SaveChangesAsync();
 
-        // Act
-        var result = await _adminService.GetDashboardAsync();
+        var svc = new AdminService(db, Mock.Of<IIdentityApiClient>());
+        var result = await svc.GetDashboardAsync();
 
-        // Assert
-        result.Should().NotBeNull();
-        result.TotalPosts.Should().Be(10);
-        result.TotalComments.Should().Be(5);
-        result.TotalEvents.Should().Be(3);
-        result.TotalResources.Should().Be(8);
-        result.TotalProjects.Should().Be(2);
+        result.PostsCount.Should().Be(2);
+        result.PublishedPostsCount.Should().Be(1);
+        result.EventsCount.Should().Be(1);
+        result.ResourcesCount.Should().Be(1);
+        result.MembersCount.Should().Be(1);
+        result.CommentsCount.Should().Be(1);
     }
 
     [Fact]
-    public async Task GetDashboardAsync_UsesCountAsyncNotGetAllAsync()
+    public async Task GetDashboardAsync_WithZeroData_ReturnsZero()
     {
-        // Arrange
-        _postRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(5);
-        _commentRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(2);
-        _eventRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(1);
-        _resourceRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(3);
-        _projectRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(0);
+        var db = CreateDb();
+        var svc = new AdminService(db, Mock.Of<IIdentityApiClient>());
+        var result = await svc.GetDashboardAsync();
 
-        // Act
-        await _adminService.GetDashboardAsync();
-
-        // Assert
-        _postRepositoryMock.Verify(x => x.CountAsync(), Times.Once);
-        _commentRepositoryMock.Verify(x => x.CountAsync(), Times.Once);
-        _eventRepositoryMock.Verify(x => x.CountAsync(), Times.Once);
-        _resourceRepositoryMock.Verify(x => x.CountAsync(), Times.Once);
-        _projectRepositoryMock.Verify(x => x.CountAsync(), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetDashboardAsync_WithZeroCounts_ReturnsZero()
-    {
-        // Arrange
-        _postRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(0);
-        _commentRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(0);
-        _eventRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(0);
-        _resourceRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(0);
-        _projectRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(0);
-
-        // Act
-        var result = await _adminService.GetDashboardAsync();
-
-        // Assert
-        result.TotalPosts.Should().Be(0);
-        result.TotalComments.Should().Be(0);
-        result.TotalEvents.Should().Be(0);
-        result.TotalResources.Should().Be(0);
-        result.TotalProjects.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task GetDashboardAsync_WithLargeCounts_ReturnsCorrectly()
-    {
-        // Arrange
-        var largeCount = 10000;
-        _postRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(largeCount);
-        _commentRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(largeCount);
-        _eventRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(largeCount);
-        _resourceRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(largeCount);
-        _projectRepositoryMock.Setup(x => x.CountAsync()).ReturnsAsync(largeCount);
-
-        // Act
-        var result = await _adminService.GetDashboardAsync();
-
-        // Assert
-        result.TotalPosts.Should().Be(largeCount);
-        result.TotalComments.Should().Be(largeCount);
+        result.PostsCount.Should().Be(0);
+        result.EventsCount.Should().Be(0);
     }
 }

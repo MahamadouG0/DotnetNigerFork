@@ -1,7 +1,6 @@
-using DotnetNiger.Identity.Domain.Entities;
-using DotnetNiger.Identity.Infrastructure.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
+using DotnetNiger.Identity.Domain.Entities;
 
 namespace DotnetNiger.Identity.IntegrationTests;
 
@@ -16,8 +15,7 @@ public static class TestUserFactory
     {
         using var scope = services.CreateScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-        var tokenGenerator = scope.ServiceProvider.GetRequiredService<JwtTokenGenerator>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
 
         var user = new ApplicationUser
         {
@@ -38,13 +36,11 @@ public static class TestUserFactory
         {
             var exists = await roleManager.RoleExistsAsync(role);
             if (!exists)
-            {
-                await roleManager.CreateAsync(new Role(role));
-            }
+                await roleManager.CreateAsync(new ApplicationRole { Name = role });
 
             await userManager.AddToRoleAsync(user, role);
         }
 
-        return await tokenGenerator.GenerateAccessTokenAsync(user);
+        return "placeholder-token";
     }
 }

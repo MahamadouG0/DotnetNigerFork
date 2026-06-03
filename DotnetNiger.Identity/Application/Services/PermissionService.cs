@@ -25,13 +25,20 @@ public class PermissionService
         return MapToResponse(permission);
     }
 
-    public async Task<List<PermissionResponse>> GetByTenantAsync(Guid tenantId)
+    public async Task<PaginatedResponse<PermissionResponse>> GetByTenantAsync(Guid tenantId, PaginationQuery pagination)
     {
-        var permissions = await _db.Permissions
-            .Where(p => p.TenantId == tenantId)
+        var query = _db.Permissions.Where(p => p.TenantId == tenantId);
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
             .OrderBy(p => p.Category).ThenBy(p => p.Name)
+            .Skip((pagination.EnsurePage - 1) * pagination.EnsurePageSize)
+            .Take(pagination.EnsurePageSize)
             .ToListAsync();
-        return permissions.Select(MapToResponse).ToList();
+
+        return new PaginatedResponse<PermissionResponse>(
+            items.Select(MapToResponse).ToList(), totalCount, pagination.EnsurePage, pagination.EnsurePageSize);
     }
 
     public async Task<List<PermissionGroupResponse>> GetGroupedByTenantAsync(Guid tenantId)

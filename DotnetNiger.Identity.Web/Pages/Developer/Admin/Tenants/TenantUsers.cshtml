@@ -1,0 +1,176 @@
+@page "/Developer/Admin/Tenants/{tenantId:guid}/Users"
+@model DotnetNiger.Identity.Web.Pages.Developer.Admin.TenantUsersModel
+@{
+    ViewData["Title"] = "Utilisateurs";
+    // Layout géré par _ViewStart.cshtml
+}
+
+<h1>Utilisateurs du tenant</h1>
+<p class="lead">Gestion des utilisateurs du tenant.</p>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-@(Model.IsError ? "danger" : "success") alert-dismissible fade show" role="alert">
+        @Model.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Utilisateurs</h5>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
+            + Nouvel utilisateur
+        </button>
+    </div>
+    <div class="card-body">
+        @if (Model.Users.Count == 0)
+        {
+            <p class="text-muted mb-0">Aucun utilisateur.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Prénom</th>
+                            <th>Nom</th>
+                            <th>Rôles</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in Model.Users)
+                        {
+                            <tr>
+                                <td>@u.Email</td>
+                                <td>@(u.FirstName ?? "—")</td>
+                                <td>@(u.LastName ?? "—")</td>
+                                <td><small>@string.Join(", ", u.Roles)</small></td>
+                                <td>
+                                    <span class="badge bg-@(u.IsActive ? "success" : "secondary")">
+                                        @(u.IsActive ? "Actif" : "Inactif")
+                                    </span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#editModal-@u.Id"
+                                            title="Modifier">&#9998;</button>
+                                    <button type="button" class="btn btn-outline-warning btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#passwordModal-@u.Id"
+                                            title="Changer mot de passe">&#128273;</button>
+                                    <form method="post" asp-page-handler="ForgotPassword" asp-route-userId="@u.Id" style="display:inline">
+                                        <button type="submit" class="btn btn-outline-info btn-sm" title="Envoyer email de réinitialisation">&#9993;</button>
+                                    </form>
+                                    <form method="post" asp-page-handler="ToggleActive" asp-route-userId="@u.Id" asp-route-isActive="@u.IsActive" style="display:inline">
+                                        <button type="submit" class="btn btn-outline-@(u.IsActive ? "warning" : "success") btn-sm"
+                                                title="@(u.IsActive ? "Désactiver" : "Activer")">
+                                            @(u.IsActive ? "&#128465;" : "&#10003;")
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="Delete" asp-route-userId="@u.Id" style="display:inline"
+                                          onsubmit="return confirm('Supprimer cet utilisateur ?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer">&#128465;</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editModal-@u.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="post" asp-page-handler="Edit" asp-route-userId="@u.Id">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Modifier @u.Email</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Prénom</label>
+                                                    <input name="EditInput.FirstName" class="form-control" value="@u.FirstName" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Nom</label>
+                                                    <input name="EditInput.LastName" class="form-control" value="@u.LastName" />
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Password Modal -->
+                            <div class="modal fade" id="passwordModal-@u.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="post" asp-page-handler="ChangePassword" asp-route-userId="@u.Id">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Mot de passe — @u.Email</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Nouveau mot de passe</label>
+                                                    <input name="PasswordInput.NewPassword" class="form-control" type="password" required minlength="8" />
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-warning">Changer le mot de passe</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Create">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouvel utilisateur</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input name="CreateInput.Email" class="form-control" type="email" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mot de passe</label>
+                        <input name="CreateInput.Password" class="form-control" type="password" required minlength="8" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Prénom</label>
+                        <input name="CreateInput.FirstName" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nom</label>
+                        <input name="CreateInput.LastName" class="form-control" />
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input name="CreateInput.Role" class="form-check-input" type="checkbox" value="User" checked />
+                        <label class="form-check-label">Rôle "User"</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

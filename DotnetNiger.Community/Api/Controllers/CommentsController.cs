@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using System.Security.Claims;
 using DotnetNiger.Community.Application.DTOs;
 using DotnetNiger.Community.Application.Services;
@@ -7,7 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace DotnetNiger.Community.Api.Controllers;
 
 [ApiController]
-[Route("api/v1/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class CommentsController(ICommentService commentService) : ControllerBase
 {
     [HttpGet("post/{postId:guid}")]
@@ -36,7 +38,9 @@ public class CommentsController(ICommentService commentService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> Create([FromBody] CreateCommentRequest request)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized(new { Success = false, Message = "Invalid user identity" });
+
         var userName = User.FindFirstValue("full_name") ?? "Unknown";
         var avatar = User.FindFirstValue("avatar_url") ?? "";
         var comment = await commentService.CreateAsync(request, userId, userName, avatar);
@@ -47,7 +51,9 @@ public class CommentsController(ICommentService commentService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateCommentRequest request)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized(new { Success = false, Message = "Invalid user identity" });
+
         var comment = await commentService.UpdateAsync(id, request, userId);
         if (comment is null) return NotFound(new { Success = false, Message = "Comment not found" });
         return Ok(new { Success = true, Data = comment });
@@ -57,7 +63,9 @@ public class CommentsController(ICommentService commentService) : ControllerBase
     [Authorize]
     public async Task<IActionResult> Delete(Guid id, [FromQuery] bool deleteAllReplies = false)
     {
-        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized(new { Success = false, Message = "Invalid user identity" });
+
         var deleted = await commentService.DeleteAsync(id, userId, deleteAllReplies);
         if (!deleted) return NotFound(new { Success = false, Message = "Comment not found" });
         return Ok(new { Success = true, Message = "Comment deleted" });

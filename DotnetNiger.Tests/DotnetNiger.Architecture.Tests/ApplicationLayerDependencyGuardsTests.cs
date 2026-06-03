@@ -5,11 +5,17 @@ namespace DotnetNiger.Architecture.Tests;
 
 public class ApplicationLayerDependencyGuardsTests
 {
+    private static readonly string[] ForbiddenPatterns =
+    [
+        ".Api",
+        ".Infrastructure.Repositories",
+    ];
+
     [Fact]
-    public void CommunityApplication_MustNotReference_CommunityInfrastructureRepositoriesNamespace()
+    public void CommunityApplication_MustNotReference_ForbiddenNamespaces()
     {
         var applicationPath = Path.GetFullPath(
-            Path.Combine(AppContext.BaseDirectory, "../../../../DotnetNiger.Community/Application"));
+            Path.Combine(AppContext.BaseDirectory, "../../../../../DotnetNiger.Community/Application"));
 
         Assert.True(Directory.Exists(applicationPath), $"Application folder not found: {applicationPath}");
 
@@ -19,22 +25,25 @@ public class ApplicationLayerDependencyGuardsTests
         foreach (var file in files)
         {
             var content = File.ReadAllText(file, Encoding.UTF8);
-            if (content.Contains("DotnetNiger.Community.Infrastructure.Repositories", StringComparison.Ordinal))
+            foreach (var pattern in ForbiddenPatterns)
             {
-                violations.Add(Path.GetRelativePath(applicationPath, file));
+                if (content.Contains(pattern, StringComparison.Ordinal))
+                {
+                    violations.Add($"{Path.GetRelativePath(applicationPath, file)} -> {pattern}");
+                }
             }
         }
 
         Assert.True(
             violations.Count == 0,
-            "Community Application must not reference Infrastructure.Repositories. Violations: " + string.Join(", ", violations));
+            "Community Application must not reference forbidden namespaces.\nViolations:\n" + string.Join("\n", violations));
     }
 
     [Fact]
-    public void IdentityApplication_MustNotReference_IdentityInfrastructureRepositoriesNamespace()
+    public void IdentityApplication_MustNotReference_ForbiddenNamespaces()
     {
         var applicationPath = Path.GetFullPath(
-            Path.Combine(AppContext.BaseDirectory, "../../../../DotnetNiger.Identity/Application"));
+            Path.Combine(AppContext.BaseDirectory, "../../../../../DotnetNiger.Identity/Application"));
 
         Assert.True(Directory.Exists(applicationPath), $"Application folder not found: {applicationPath}");
 
@@ -44,14 +53,17 @@ public class ApplicationLayerDependencyGuardsTests
         foreach (var file in files)
         {
             var content = File.ReadAllText(file, Encoding.UTF8);
-            if (content.Contains("DotnetNiger.Identity.Infrastructure.Repositories", StringComparison.Ordinal))
+            foreach (var pattern in ForbiddenPatterns)
             {
-                violations.Add(Path.GetRelativePath(applicationPath, file));
+                if (content.Contains(pattern, StringComparison.Ordinal))
+                {
+                    violations.Add($"{Path.GetRelativePath(applicationPath, file)} -> {pattern}");
+                }
             }
         }
 
         Assert.True(
             violations.Count == 0,
-            "Identity Application must not reference Infrastructure.Repositories. Violations: " + string.Join(", ", violations));
+            "Identity Application must not reference forbidden namespaces.\nViolations:\n" + string.Join("\n", violations));
     }
 }

@@ -1,0 +1,70 @@
+@page
+@{
+    ViewData["Title"] = "Portail Développeur";
+    // Layout géré par _ViewStart.cshtml
+}
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h1>Portail Développeur</h1>
+        <p class="lead">Gérez vos intégrations et services sur la plateforme DotnetNiger.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6 col-lg-3">
+        <a href="/Developer/Dashboard" class="text-decoration-none">
+            <div class="card h-100 border-primary">
+                <div class="card-body text-center py-5">
+                    <h3 class="card-title text-primary">📊</h3>
+                    <h5 class="card-title">Tableau de bord</h5>
+                    <p class="card-text text-muted">Vue d'ensemble de vos clés API et services</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <a href="/Developer/ApiKeys" class="text-decoration-none">
+            <div class="card h-100 border-success">
+                <div class="card-body text-center py-5">
+                    <h3 class="card-title text-success">🔑</h3>
+                    <h5 class="card-title">Clés API</h5>
+                    <p class="card-text text-muted">Gérez vos clés d'API sécurisées</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <a href="/Developer/Services" class="text-decoration-none">
+            <div class="card h-100 border-info">
+                <div class="card-body text-center py-5">
+                    <h3 class="card-title text-info">🌐</h3>
+                    <h5 class="card-title">Services</h5>
+                    <p class="card-text text-muted">Enregistrez et gérez vos APIs</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <a href="/Developer/Docs" class="text-decoration-none">
+            <div class="card h-100 border-warning">
+                <div class="card-body text-center py-5">
+                    <h3 class="card-title text-warning">📚</h3>
+                    <h5 class="card-title">Documentation</h5>
+                    <p class="card-text text-muted">Exemples d'intégration multi-langage</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <a href="/Developer/Gdpr" class="text-decoration-none">
+            <div class="card h-100 border-secondary">
+                <div class="card-body text-center py-5">
+                    <h3 class="card-title text-secondary">🛡️</h3>
+                    <h5 class="card-title">RGPD</h5>
+                    <p class="card-text text-muted">Gérez vos consentements et données personnelles</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>

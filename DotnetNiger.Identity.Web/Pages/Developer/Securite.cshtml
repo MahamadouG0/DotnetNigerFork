@@ -1,0 +1,76 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.Developer.SecuriteModel
+@{
+    ViewData["Title"] = "Sécurité du compte";
+}
+
+<h1>Sécurité du compte</h1>
+<p class="lead">Informations et paramètres de sécurité de votre compte.</p>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-info bg-opacity-10 p-3 rounded me-3">
+                        <i class="bi bi-clock-history fs-4 text-info"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Dernière connexion</h5>
+                    </div>
+                </div>
+                <p class="text-muted mb-2">Consultez l'historique de vos connexions pour surveiller l'activité de votre compte.</p>
+                <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>Les informations détaillées de connexion sont disponibles dans les logs du système.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-warning bg-opacity-10 p-3 rounded me-3">
+                        <i class="bi bi-laptop fs-4 text-warning"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Sessions actives</h5>
+                    </div>
+                </div>
+                <p class="text-muted mb-2">Gérez vos sessions actives et déconnectez-vous des appareils que vous ne reconnaissez pas.</p>
+                <p class="text-muted small mb-0"><i class="bi bi-info-circle me-1"></i>La gestion des sessions sera bientôt disponible.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                        <i class="bi bi-key fs-4 text-primary"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Mot de passe</h5>
+                    </div>
+                </div>
+                <p class="text-muted mb-3">Modifiez votre mot de passe régulièrement pour renforcer la sécurité de votre compte.</p>
+                <a href="/Developer/Profile" class="btn btn-outline-primary">
+                    <i class="bi bi-pencil me-1"></i>Changer le mot de passe
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success bg-opacity-10 p-3 rounded me-3">
+                        <i class="bi bi-shield-check fs-4 text-success"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Authentification</h5>
+                    </div>
+                </div>
+                <p class="text-muted mb-2">Votre compte utilise l'authentification par mot de passe. La double authentification (2FA) sera bientôt disponible.</p>
+            </div>
+        </div>
+    </div>
+</div>

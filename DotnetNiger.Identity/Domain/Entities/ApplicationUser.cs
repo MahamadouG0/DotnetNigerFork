@@ -15,4 +15,5 @@ public class ApplicationUser : IdentityUser<Guid>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string? EmailConfirmationCode { get; set; }
     public DateTime? EmailConfirmationCodeExpiry { get; set; }
+    public string? PendingEmail { get; set; }
 }

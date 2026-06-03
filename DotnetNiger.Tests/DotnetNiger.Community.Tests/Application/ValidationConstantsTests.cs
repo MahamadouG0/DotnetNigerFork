@@ -1,4 +1,4 @@
-using DotnetNiger.Community.Application.ValidationConstants;
+using DotnetNiger.Community.Application;
 using FluentAssertions;
 using Xunit;
 

@@ -8,6 +8,11 @@ on:
 
 jobs:
   build-test:
+    strategy:
+      matrix:
+        project:
+          - DotnetNiger.slnx
+          - DotnetNiger.Tests/DotnetNiger.Architecture.Tests/DotnetNiger.Architecture.Tests.csproj
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,13 +21,34 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "8.0.x"
+          dotnet-version: "9.0.x"
 
       - name: Restore
-        run: dotnet restore DotnetNiger.slnx
+        run: dotnet restore ${{ matrix.project }}
 
       - name: Build
-        run: dotnet build DotnetNiger.slnx --configuration Release --no-restore
+        run: dotnet build ${{ matrix.project }} --configuration Release --no-restore
 
       - name: Test
-        run: dotnet test DotnetNiger.slnx --configuration Release --no-build --verbosity normal
+        if: matrix.project == 'DotnetNiger.slnx'
+        run: dotnet test ${{ matrix.project }} --configuration Release --no-build --verbosity normal
+
+      - name: Run architecture guards
+        if: matrix.project != 'DotnetNiger.slnx'
+        run: dotnet test ${{ matrix.project }} --configuration Release --no-build --verbosity normal
+
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore DotnetNiger.slnx
+
+      - name: Check for errors and warnings
+        run: dotnet build DotnetNiger.slnx --no-restore --configuration Release /p:TreatWarningsAsErrors=true

@@ -1,0 +1,107 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.Developer.GdprModel
+@{
+    ViewData["Title"] = "RGPD - Données personnelles";
+}
+
+<h1><i class="bi bi-shield-check me-2"></i>RGPD - Données personnelles</h1>
+<p class="lead">Gérez vos consentements, exportez vos données ou exercez votre droit à l'oubli.</p>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-@(Model.IsError ? "danger" : "success") alert-dismissible fade show" role="alert">
+        @Model.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!Model.IsError && Model.Message.Contains("déconnecté"))
+{
+    <div class="mb-3">
+        <a href="/Account/Logout" class="btn btn-danger">
+            <i class="bi bi-box-arrow-right me-1"></i>Déconnexion
+        </a>
+    </div>
+}
+
+@* ──── Consentements ──── *@
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-check2-square me-1"></i>Historique des consentements</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.Consents.Count == 0)
+        {
+            <p class="text-muted mb-0">Aucun consentement enregistré.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Version</th>
+                            <th>Statut</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Consents)
+                        {
+                            <tr>
+                                <td>@c.ConsentType</td>
+                                <td><code>@c.ConsentVersion</code></td>
+                                <td>
+                                    @if (c.Granted)
+                                    {
+                                        <span class="badge bg-success">Accepté</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Refusé</span>
+                                    }
+                                </td>
+                                <td>@c.CreatedAt.ToString("g")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@* ──── Export ──── *@
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-download me-1"></i>Export de vos données</h5>
+    </div>
+    <div class="card-body">
+        <p>Téléchargez l'ensemble de vos données personnelles au format ZIP (Article 20 RGPD — Portabilité).</p>
+        <form method="post" asp-page-handler="Export">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-file-zip me-1"></i>Télécharger mes données
+            </button>
+        </form>
+    </div>
+</div>
+
+@* ──── Droit à l'oubli ──── *@
+<div class="card mb-4 border-danger">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-trash me-1"></i>Droit à l'oubli</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            <strong>Attention :</strong> Cette action est irréversible. Vos données personnelles seront anonymisées et vous ne pourrez plus accéder à votre compte.
+        </div>
+        <p>Conformément à l'Article 17 du RGPD, vous pouvez demander l'effacement de vos données personnelles.</p>
+        <form method="post" asp-page-handler="ForgetMe" onsubmit="return confirm('Êtes-vous sûr de vouloir anonymiser votre compte ? Cette action est irréversible.');">
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-person-x me-1"></i>Anonymiser mon compte
+            </button>
+        </form>
+    </div>
+</div>

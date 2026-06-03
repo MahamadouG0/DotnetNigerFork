@@ -1,0 +1,83 @@
+@page "/Developer/Admin/Tenants/{tenantId:guid}/ApiKeys"
+@model DotnetNiger.Identity.Web.Pages.Developer.Admin.TenantApiKeysModel
+@{
+    ViewData["Title"] = "Clés API";
+}
+
+<h1>Clés API du tenant</h1>
+<p class="lead">Gérez les clés d'API de ce tenant.</p>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-@(Model.IsError ? "danger" : "success") alert-dismissible fade show" role="alert">
+        @Model.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Clés API</h5>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#newKeyForm">+ Nouvelle clé</button>
+    </div>
+    <div class="card-body">
+        <div class="collapse mb-3" id="newKeyForm">
+            <form method="post" asp-page-handler="Create">
+                <div class="input-group">
+                    <input asp-for="NewKeyName" class="form-control" placeholder="Nom de la clé (ex: Production)" required />
+                    <button type="submit" class="btn btn-success">Créer</button>
+                </div>
+            </form>
+        </div>
+
+        @if (Model.ApiKeys.Count == 0)
+        {
+            <p class="text-muted mb-0">Aucune clé API.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Préfixe</th>
+                            <th>Statut</th>
+                            <th>Créée</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var key in Model.ApiKeys)
+                        {
+                            <tr>
+                                <td>@key.Name</td>
+                                <td><code>@key.KeyPrefix</code></td>
+                                <td>
+                                    @if (key.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactive</span>
+                                    }
+                                </td>
+                                <td>@key.CreatedAt.ToString("g")</td>
+                                <td>
+                                    <form method="post" asp-page-handler="Rotate" asp-route-keyId="@key.Id" style="display:inline">
+                                        <button type="submit" class="btn btn-outline-warning btn-sm" title="Rotation">&#128260;</button>
+                                    </form>
+                                    <form method="post" asp-page-handler="Delete" asp-route-keyId="@key.Id" style="display:inline"
+                                          onsubmit="return confirm('Supprimer cette clé ?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer">&#128465;</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

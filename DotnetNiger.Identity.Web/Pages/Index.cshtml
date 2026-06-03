@@ -1,0 +1,422 @@
+﻿@page
+@model DotnetNiger.Identity.Web.Pages.IndexModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    ViewData["Title"] = "Accueil";
+    ViewData["FullWidth"] = true;
+    var identityUrl = (Configuration["Identity:BaseUrl"] ?? "https://localhost:7075").TrimEnd('/');
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+}
+
+<!--  Hero -->
+<section class="position-relative overflow-hidden" style="background: linear-gradient(135deg, #512BD4 0%, #6b3ff5 50%, #8549f5 100%);">
+    <div class="container position-relative" style="z-index:1;">
+        <div class="row align-items-center" style="min-height:80vh;">
+            <div class="col-lg-7 py-5">
+                <div class="d-flex gap-2 mb-3 flex-wrap">
+                    <span class="badge bg-white text-primary rounded-pill px-3 py-2">Gratuit</span>
+                    <span class="badge text-white rounded-pill px-3 py-2" style="background: rgba(255,255,255,0.2);">Open Source</span>
+                </div>
+                <h1 class="display-4 fw-bold text-white mb-3 lh-1">Plateforme de gestion d'authentification<br>et de services</h1>
+                <p class="lead text-white mb-4 opacity-90" style="max-width:580px;">
+                    DotnetNiger permet aux développeurs de gérer leurs clés API, services et intégrations gratuitement, dans un environnement sécurisé et moderne.
+                </p>
+                <div class="d-flex flex-wrap gap-3">
+                    @if (isAuthenticated)
+                    {
+                        <a href="/Developer/Dashboard" class="btn btn-light btn-lg px-4 fw-bold rounded-3 shadow-sm">
+                            <i class="bi bi-speedometer2 me-2"></i>Tableau de bord
+                        </a>
+                    }
+                    else
+                    {
+                        <a href="/Account/Login" class="btn btn-light btn-lg px-4 fw-bold rounded-3 shadow-sm">
+                            <i class="bi bi-lock me-2"></i>Connexion sécurisée
+                        </a>
+                        <a href="@identityUrl/Account/Register" class="btn btn-outline-light btn-lg px-4 rounded-3">
+                            Créer un compte gratuitement
+                        </a>
+                    }
+                </div>
+            </div>
+            <div class="col-lg-5 py-5 d-none d-lg-block">
+                <div class="rounded-4 p-4 text-white" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(12px);">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="small fw-semibold" style="opacity:0.8;"><i class="bi bi-activity me-1"></i>Dashboard développeur</span>
+                        <span class="badge bg-success rounded-pill">Live</span>
+                    </div>
+                    <div class="d-flex align-items-end gap-1 mb-3" style="height:100px;">
+                        <div class="flex-grow-1 rounded-top bar-anim" style="height:30%;background:rgba(255,255,255,0.5);animation-delay:0s;"></div>
+                        <div class="flex-grow-1 rounded-top bar-anim" style="height:55%;background:rgba(255,255,255,0.6);animation-delay:0.1s;"></div>
+                        <div class="flex-grow-1 rounded-top bar-anim" style="height:40%;background:rgba(255,255,255,0.5);animation-delay:0.2s;"></div>
+                        <div class="flex-grow-1 rounded-top bar-anim" style="height:70%;background:rgba(255,255,255,0.6);animation-delay:0.3s;"></div>
+                        <div class="flex-grow-1 rounded-top bar-anim" style="height:50%;background:rgba(255,255,255,0.5);animation-delay:0.4s;"></div>
+                        <div class="flex-grow-1 rounded-top bar-anim" style="height:80%;background:rgba(255,255,255,0.6);animation-delay:0.5s;"></div>
+                        <div class="flex-grow-1 rounded-top bar-anim" style="height:60%;background:rgba(255,255,255,0.5);animation-delay:0.6s;"></div>
+                        <div class="flex-grow-1 rounded-top bar-anim" style="height:90%;background:rgba(255,255,255,0.6);animation-delay:0.7s;"></div>
+                        <div class="flex-grow-1 rounded-top bar-anim" style="height:65%;background:rgba(255,255,255,0.5);animation-delay:0.8s;"></div>
+                        <div class="flex-grow-1 rounded-top bar-anim" style="height:75%;background:rgba(255,255,255,0.6);animation-delay:0.9s;"></div>
+                    </div>
+                    <div class="row g-2 text-center">
+                        <div class="col-4"><div class="rounded-3 p-2" style="background:rgba(255,255,255,0.1);"><div class="fw-bold fs-5">1.2K</div><div class="small" style="opacity:0.7;">Requêtes aujourd'hui</div></div></div>
+                        <div class="col-4"><div class="rounded-3 p-2" style="background:rgba(255,255,255,0.1);"><div class="fw-bold fs-5">8.4K</div><div class="small" style="opacity:0.7;">Cette semaine</div></div></div>
+                        <div class="col-4"><div class="rounded-3 p-2" style="background:rgba(255,255,255,0.1);"><div class="fw-bold fs-5">99.9%</div><div class="small" style="opacity:0.7;">Uptime</div></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="position-absolute top-0 end-0 w-50 h-100 opacity-10" style="background:radial-gradient(circle at 70% 50%, #fff 0%, transparent 70%);"></div>
+</section>
+
+<!--  Stats bar -->
+<section class="py-4 bg-white border-bottom">
+    <div class="container">
+        <div class="row g-3 text-center">
+            <div class="col-6 col-md-3">
+                <div class="fw-bold text-primary fs-3">3</div>
+                <div class="text-muted small">Fournisseurs OAuth</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="fw-bold text-primary fs-3">OIDC</div>
+                <div class="text-muted small">Protocole supporté</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="fw-bold text-primary fs-3">2</div>
+                <div class="text-muted small">Tenants actifs</div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="fw-bold text-primary fs-3">+99%</div>
+                <div class="text-muted small">Disponibilité</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!--  Sécurité -->
+<section id="securite" class="py-5">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <h2 class="fw-bold mb-3">Sécurité intégrée dès la base</h2>
+                <p class="text-muted mb-4">DotnetNiger protège toutes les opérations avec :</p>
+                <ul class="list-unstyled">
+                    <li class="mb-3 d-flex gap-3">
+                        <i class="bi bi-shield-check text-primary fs-5 flex-shrink-0"></i>
+                        <div><strong>Authentification sécurisée (JWT)</strong><br><span class="text-muted small">Tokens signés avec rotation automatique des clés.</span></div>
+                    </li>
+                    <li class="mb-3 d-flex gap-3">
+                        <i class="bi bi-lock text-primary fs-5 flex-shrink-0"></i>
+                        <div><strong>Chiffrement des données sensibles</strong><br><span class="text-muted small">Données chiffrées au repos et en transit (TLS).</span></div>
+                    </li>
+                    <li class="mb-3 d-flex gap-3">
+                        <i class="bi bi-shield-exclamation text-primary fs-5 flex-shrink-0"></i>
+                        <div><strong>Protection anti-abus API</strong><br><span class="text-muted small">Rate limiting global et par endpoint.</span></div>
+                    </li>
+                    <li class="mb-3 d-flex gap-3">
+                        <i class="bi bi-devices text-primary fs-5 flex-shrink-0"></i>
+                        <div><strong>Sessions sécurisées multi-appareils</strong><br><span class="text-muted small">Gestion des sessions actives avec révocation à distance.</span></div>
+                    </li>
+                    <li class="mb-3 d-flex gap-3">
+                        <i class="bi bi-search text-primary fs-5 flex-shrink-0"></i>
+                        <div><strong>Vérification des requêtes</strong><br><span class="text-muted small">Validation des entrées et protection CSRF/XSS.</span></div>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="p-5 rounded-4" style="background:#f8f6ff;">
+                    <i class="bi bi-shield-lock text-primary" style="font-size:6rem;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!--  Fonctionnalités -->
+<section id="fonctionnalites" class="py-5" style="background:#f8f6ff;">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Tout ce qu'il faut pour développer rapidement</h2>
+            <p class="text-muted">Une plateforme complète pour gérer vos APIs et services.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <i class="bi bi-key text-primary fs-2"></i>
+                        <h5 class="fw-bold mb-0">Gestion des clés API</h5>
+                    </div>
+                    <p class="text-muted small mb-0">Créez, révoquez et faites la rotation de vos clés d'API avec expiration configurable.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <i class="bi bi-wifi text-primary fs-2"></i>
+                        <h5 class="fw-bold mb-0">API REST simple et rapide</h5>
+                    </div>
+                    <p class="text-muted small mb-0">Endpoints REST intuitifs avec authentification OAuth2 et documentation Swagger.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <i class="bi bi-bar-chart text-primary fs-2"></i>
+                        <h5 class="fw-bold mb-0">Dashboard en temps réel</h5>
+                    </div>
+                    <p class="text-muted small mb-0">Suivez vos métriques, logs et statistiques d'utilisation en direct.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <i class="bi bi-flask text-primary fs-2"></i>
+                        <h5 class="fw-bold mb-0">Mode test (sandbox gratuit)</h5>
+                    </div>
+                    <p class="text-muted small mb-0">Environnement de test isolé pour développer sans risque.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <i class="bi bi-bell text-primary fs-2"></i>
+                        <h5 class="fw-bold mb-0">Notifications système</h5>
+                    </div>
+                    <p class="text-muted small mb-0">Recevez des alertes sur l'activité de vos services et les événements importants.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card border-0 shadow-sm h-100 p-4">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <i class="bi bi-people text-primary fs-2"></i>
+                        <h5 class="fw-bold mb-0">Gestion des comptes utilisateurs</h5>
+                    </div>
+                    <p class="text-muted small mb-0">Inscription, connexion, profils et permissions multi-utilisateurs.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!--  Dashboard preview -->
+<section id="dashboard" class="py-5">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <h2 class="fw-bold mb-3">Un dashboard clair et puissant</h2>
+                <p class="text-muted mb-4">Suivez vos activités API en temps réel.</p>
+                <ul class="list-unstyled">
+                    <li class="mb-2 d-flex gap-2"><i class="bi bi-graph-up text-primary"></i><span>Graphiques de requêtes</span></li>
+                    <li class="mb-2 d-flex gap-2"><i class="bi bi-journal-text text-primary"></i><span>Logs récents</span></li>
+                    <li class="mb-2 d-flex gap-2"><i class="bi bi-heart-pulse text-primary"></i><span>Statut des services</span></li>
+                    <li class="mb-2 d-flex gap-2"><i class="bi bi-person-badge text-primary"></i><span>Activité utilisateur</span></li>
+                </ul>
+                @if (isAuthenticated)
+                {
+                    <a href="/Developer/Dashboard" class="btn btn-primary rounded-3 px-4"><i class="bi bi-speedometer2 me-2"></i>Accéder au dashboard</a>
+                }
+                else
+                {
+                    <a href="@identityUrl/Account/Register" class="btn btn-primary rounded-3 px-4"><i class="bi bi-person-plus me-2"></i>Créer un compte pour accéder</a>
+                }
+            </div>
+            <div class="col-lg-6">
+                <div class="bg-dark rounded-4 p-4 shadow-lg">
+                    <div class="d-flex align-items-center gap-2 mb-4">
+                        <span class="badge bg-primary rounded-pill">Dashboard</span>
+                        <span class="small text-white-50">Aperçu en temps réel</span>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between text-white-50 small mb-1"><span>Requêtes</span><span>1 234</span></div>
+                        <div class="progress" style="height:8px;"><div class="progress-bar bg-primary" style="width:75%"></div></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between text-white-50 small mb-1"><span>Erreurs</span><span>12</span></div>
+                        <div class="progress" style="height:8px;"><div class="progress-bar bg-success" style="width:5%"></div></div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between text-white-50 small mb-1"><span>Latence moyenne</span><span>42ms</span></div>
+                        <div class="progress" style="height:8px;"><div class="progress-bar bg-warning" style="width:25%"></div></div>
+                    </div>
+                    <div class="mt-4 pt-3 border-top border-secondary">
+                        <div class="d-flex align-items-center text-white-50 small"><i class="bi bi-check-circle-fill text-success me-2"></i>Tous les services sont opérationnels</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!--  Développeurs -->
+<section id="developpeurs" class="py-5" style="background:#f8f6ff;">
+    <div class="container text-center">
+        <h2 class="fw-bold mb-3">Conçu pour les développeurs africains et globaux</h2>
+        <p class="text-muted mb-5 mx-auto" style="max-width:650px;">
+            DotnetNiger est une plateforme légère, rapide et accessible gratuitement pour :
+        </p>
+        <div class="row g-4 justify-content-center">
+            <div class="col-6 col-md-3">
+                <div class="p-4 rounded-3 h-100" style="background:white;">
+                    <i class="bi bi-mortarboard text-primary fs-1 mb-2 d-block"></i>
+                    <h6 class="fw-bold">Étudiants</h6>
+                    <p class="small text-muted mb-0">Apprenez en construisant avec des APIs réelles.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-4 rounded-3 h-100" style="background:white;">
+                    <i class="bi bi-laptop text-primary fs-1 mb-2 d-block"></i>
+                    <h6 class="fw-bold">Développeurs indépendants</h6>
+                    <p class="small text-muted mb-0">Intégrez l'authentification dans vos projets.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-4 rounded-3 h-100" style="background:white;">
+                    <i class="bi bi-rocket text-primary fs-1 mb-2 d-block"></i>
+                    <h6 class="fw-bold">Startups</h6>
+                    <p class="small text-muted mb-0">Déployez rapidement sans infrastructure lourde.</p>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="p-4 rounded-3 h-100" style="background:white;">
+                    <i class="bi bi-lightbulb text-primary fs-1 mb-2 d-block"></i>
+                    <h6 class="fw-bold">Projets personnels</h6>
+                    <p class="small text-muted mb-0">Sécurisez vos apps gratuitement.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!--  Documentation -->
+<section id="documentation" class="py-5">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <h2 class="fw-bold mb-3">Documentation simple et complète</h2>
+                <p class="text-muted mb-4">Tout ce dont vous avez besoin pour intégrer DotnetNiger rapidement.</p>
+                <ul class="list-unstyled">
+                    <li class="mb-3 d-flex gap-3">
+                        <i class="bi bi-file-text text-primary fs-5 flex-shrink-0"></i>
+                        <div><strong>Guides API</strong><br><span class="text-muted small">Documentation interactive Swagger avec exemples concrets.</span></div>
+                    </li>
+                    <li class="mb-3 d-flex gap-3">
+                        <i class="bi bi-code-slash text-primary fs-5 flex-shrink-0"></i>
+                        <div><strong>Exemples Node.js / .NET / Python</strong><br><span class="text-muted small">Extraits de code prêts à l'emploi dans les langages les plus populaires.</span></div>
+                    </li>
+                    <li class="mb-3 d-flex gap-3">
+                        <i class="bi bi-book text-primary fs-5 flex-shrink-0"></i>
+                        <div><strong>Tutoriels étape par étape</strong><br><span class="text-muted small">Guides complets du débutant à l'intégration avancée.</span></div>
+                    </li>
+                    <li class="mb-3 d-flex gap-3">
+                        <i class="bi bi-lightning text-primary fs-5 flex-shrink-0"></i>
+                        <div><strong>Intégration rapide</strong><br><span class="text-muted small">Mettez en place l'authentification en moins de 5 minutes.</span></div>
+                    </li>
+                </ul>
+                <a href="/Docs" class="btn btn-primary rounded-3 px-4"><i class="bi bi-book me-2"></i>Voir la documentation</a>
+            </div>
+            <div class="col-lg-6">
+                <div class="bg-dark rounded-4 p-4 shadow-lg">
+                    <div class="d-flex gap-2 mb-3 align-items-center">
+                        <span class="badge bg-success">Node.js</span>
+                        <span class="small text-white-50">Authentification avec une clé API</span>
+                    </div>
+                    <pre class="mb-0" style="color:#a8d8ff;font-size:0.9rem;"><code>const api = new DotnetNigerClient({
+  apiKey: 'dni_abc123...'
+});
+
+const user = await api.auth.login({
+  email: 'dev@example.com'
+});
+
+console.log(user.token);</code></pre>
+                    <div class="mt-3 d-flex gap-2">
+                        <span class="badge bg-secondary">.NET</span>
+                        <span class="badge bg-secondary">Python</span>
+                        <span class="badge bg-secondary">curl</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!--  Support -->
+<section id="support" class="py-5" style="background:#f8f6ff;">
+    <div class="container text-center">
+        <h2 class="fw-bold mb-3">Besoin d'aide ?</h2>
+        <p class="text-muted mb-5">Nous sommes là pour vous accompagner.</p>
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-4 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 p-4">
+                    <i class="bi bi-question-circle text-primary fs-1 mb-3"></i>
+                    <h6 class="fw-bold">Centre d'aide</h6>
+                    <p class="small text-muted mb-3">Consultez notre base de connaissances.</p>
+                    <a href="/Support" class="btn btn-outline-primary btn-sm rounded-3 mt-auto">Accéder</a>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 p-4">
+                    <i class="bi bi-book text-primary fs-1 mb-3"></i>
+                    <h6 class="fw-bold">Documentation</h6>
+                    <p class="small text-muted mb-3">Guides et références techniques.</p>
+                    <a href="/Docs" class="btn btn-outline-primary btn-sm rounded-3 mt-auto">Lire</a>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 p-4">
+                    <i class="bi bi-envelope text-primary fs-1 mb-3"></i>
+                    <h6 class="fw-bold">Support par email</h6>
+                    <p class="small text-muted mb-3">Réponse sous 24h ouvrées.</p>
+                    <a href="mailto:support@dotnetniger.com" class="btn btn-outline-primary btn-sm rounded-3 mt-auto">Écrire</a>
+                </div>
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 p-4">
+                    <i class="bi bi-chat-dots text-primary fs-1 mb-3"></i>
+                    <h6 class="fw-bold">FAQ développeurs</h6>
+                    <p class="small text-muted mb-3">Questions fréquentes et dépannage.</p>
+                    <a href="/Support#faq" class="btn btn-outline-primary btn-sm rounded-3 mt-auto">Consulter</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!--  Communauté -->
+<section id="communaute" class="py-5">
+    <div class="container text-center">
+        <h2 class="fw-bold mb-3">Une communauté de développeurs</h2>
+        <p class="text-muted mb-5 mx-auto" style="max-width:600px;">
+            Partage, apprentissage et collaboration autour de DotnetNiger.
+        </p>
+        <div class="d-flex justify-content-center gap-4">
+            <a href="#" class="text-muted"><i class="bi bi-github fs-1"></i></a>
+            <a href="#" class="text-muted"><i class="bi bi-twitter-x fs-1"></i></a>
+            <a href="#" class="text-muted"><i class="bi bi-linkedin fs-1"></i></a>
+            <a href="#" class="text-muted"><i class="bi bi-discord fs-1"></i></a>
+        </div>
+    </div>
+</section>
+
+<!--  CTA final -->
+<section class="py-5 text-white text-center" style="background: linear-gradient(135deg, #512BD4 0%, #6b3ff5 50%, #8549f5 100%);">
+    <div class="container">
+        <h2 class="fw-bold mb-3" style="font-size:2.2rem;">Commencez gratuitement dès maintenant</h2>
+        <p class="lead mb-4 opacity-90">Créez votre compte et commencez à utiliser DotnetNiger sans aucun coût.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-3">
+            @if (isAuthenticated)
+            {
+                <a href="/Developer/Dashboard" class="btn btn-light btn-lg px-4 fw-bold rounded-3 shadow-sm">
+                    <i class="bi bi-speedometer2 me-2"></i>Mon tableau de bord
+                </a>
+            }
+            else
+            {
+                <a href="@identityUrl/Account/Register" class="btn btn-light btn-lg px-4 fw-bold rounded-3 shadow-sm">
+                    <i class="bi bi-person-plus me-2"></i>Créer un compte gratuit
+                </a>
+                <a href="/Account/Login" class="btn btn-outline-light btn-lg px-4 rounded-3">Se connecter</a>
+            }
+        </div>
+    </div>
+</section>

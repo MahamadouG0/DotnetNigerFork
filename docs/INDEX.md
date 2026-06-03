@@ -1,27 +1,40 @@
-# Documentation DotnetNiger
+# DotnetNiger Documentation Index
 
-Ce dossier centralise la documentation technique actuelle du monorepo.
+Central documentation for the DotnetNiger monorepo.
 
-## Fichiers
+## Quick Links
 
-- [SETUP.md](SETUP.md): installation locale, prerequis, execution des services.
-- [ARCHITECTURE.md](ARCHITECTURE.md): architecture microservices et regles de dependances.
-- [API.md](API.md): routes principales, URLs et conventions API.
-- [HEALTH_REPORT.md](HEALTH_REPORT.md): etat de sante technique et controles CI.
+| Document                           | Description                                  |
+| ---------------------------------- | -------------------------------------------- |
+| [SETUP.md](SETUP.md)               | Local setup, prerequisites, service startup  |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Microservices architecture, dependency rules |
+| [API.md](API.md)                   | API endpoints, routing, conventions          |
 
-## Portee
+## Service Documentation
 
-Cette documentation couvre:
+| Service          | README                                                                  | Integration Guide                                                                        |
+| ---------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **Gateway**      | [README](../DotnetNiger.Gateway/README.md)                              | —                                                                                        |
+| **Identity**     | [README](../DotnetNiger.Identity/README.md)                             | [INTEGRATION_GUIDE](../DotnetNiger.Identity/INTEGRATION_GUIDE.md)                        |
+| **Community**    | [README](../DotnetNiger.Community/README.md)                            | [INTEGRATION_GUIDE](../DotnetNiger.Community/INTEGRATION_GUIDE.md)                       |
+| **Identity.Web** | [README](../DotnetNiger.Identity.Web/README.md)                         | —                                                                                        |
+| **TestIdentity** | [README](../DotnetNiger.TestIdentity/README.md)                         | —                                                                                        |
 
-- DotnetNiger.Gateway
-- DotnetNiger.Identity
-- DotnetNiger.Community
-- DotnetNiger.Architecture.Tests
+## Scope
 
-## Source de verite
+This documentation covers:
 
-La source de verite reste le code. En cas d'ecart, prioriser:
+- **DotnetNiger.Gateway** — API Gateway (Ocelot)
+- **DotnetNiger.Identity** — Auth service (OpenIddict)
+- **DotnetNiger.Community** — Community content service
+- **DotnetNiger.Identity.Web** — Developer Portal (Razor Pages)
+- **DotnetNiger.TestIdentity** — OIDC test client
+- **DotnetNiger.Tests** — Unit and integration tests
 
-1. Les fichiers de configuration runtime ([DotnetNiger.Gateway/appsettings.Development.json](../DotnetNiger.Gateway/appsettings.Development.json), [DotnetNiger.Identity/appsettings.Development.json](../DotnetNiger.Identity/appsettings.Development.json), [DotnetNiger.Community/appsettings.Development.json](../DotnetNiger.Community/appsettings.Development.json))
-2. Les workflows CI ([.github/workflows/ci.yml](../.github/workflows/ci.yml), [.github/workflows/tests.yml](../.github/workflows/tests.yml))
-3. Les tests d'architecture ([DotnetNiger.Architecture.Tests/ApplicationLayerDependencyGuardsTests.cs](../DotnetNiger.Architecture.Tests/ApplicationLayerDependencyGuardsTests.cs))
+## Source of Truth
+
+In case of discrepancies, prioritize:
+
+1. Configuration files (`appsettings.*.json`)
+2. CI/CD workflows (`.github/workflows/`)
+3. Architecture tests (`DotnetNiger.Tests/DotnetNiger.Architecture.Tests/`)

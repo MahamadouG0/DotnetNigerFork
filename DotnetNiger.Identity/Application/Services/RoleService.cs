@@ -33,16 +33,22 @@ public class RoleService
         return new RoleResponse(role.Id, role.Name!, role.Description, role.TenantId, 0);
     }
 
-    public async Task<List<RoleResponse>> GetByTenantAsync(Guid tenantId)
+    public async Task<PaginatedResponse<RoleResponse>> GetByTenantAsync(Guid tenantId, PaginationQuery pagination)
     {
-        var roles = await _db.Roles.Where(r => r.TenantId == tenantId).ToListAsync();
-        var result = new List<RoleResponse>();
-        foreach (var role in roles)
-        {
-            var count = await _db.UserRoles.CountAsync(ur => ur.RoleId == role.Id);
-            result.Add(new RoleResponse(role.Id, role.Name!, role.Description, role.TenantId, count));
-        }
-        return result;
+        var query = _db.Roles
+            .Where(r => r.TenantId == tenantId)
+            .GroupJoin(_db.UserRoles, r => r.Id, ur => ur.RoleId, (r, urs) => new { Role = r, UserCount = urs.Count() })
+            .Select(x => new RoleResponse(x.Role.Id, x.Role.Name!, x.Role.Description, x.Role.TenantId, x.UserCount));
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .OrderBy(r => r.Id)
+            .Skip((pagination.EnsurePage - 1) * pagination.EnsurePageSize)
+            .Take(pagination.EnsurePageSize)
+            .ToListAsync();
+
+        return new PaginatedResponse<RoleResponse>(items, totalCount, pagination.EnsurePage, pagination.EnsurePageSize);
     }
 
     public async Task<RoleResponse> UpdateAsync(Guid id, UpdateRoleRequest request)

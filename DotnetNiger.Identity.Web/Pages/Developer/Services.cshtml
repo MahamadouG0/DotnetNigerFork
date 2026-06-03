@@ -1,0 +1,179 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.Developer.ServicesModel
+@{
+    ViewData["Title"] = "Services";
+    // Layout géré par _ViewStart.cshtml
+}
+
+<h1>Services externes</h1>
+<p class="lead">APIs externes enregistrées sur la plateforme DotnetNiger.</p>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-@(Model.IsError ? "danger" : "success") alert-dismissible fade show" role="alert">
+        @Model.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Vos services</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.Services.Count == 0)
+        {
+            <p class="text-muted mb-0">Aucun service enregistré pour le moment.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Slug</th>
+                            <th>URL</th>
+                            <th>Statut</th>
+                            <th>Santé</th>
+                            <th>Créé le</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var svc in Model.Services)
+                        {
+                            <tr>
+                                <td>@svc.Name</td>
+                                <td><code>@svc.Slug</code></td>
+                                <td><a href="@svc.BaseUrl" target="_blank">@svc.BaseUrl</a></td>
+                                <td>
+                                    <span class="badge bg-@(svc.Status switch {
+                                        "Active" => "success",
+                                        "Suspended" => "danger",
+                                        "Pending" => "warning",
+                                        _ => "secondary"
+                                    })">@svc.Status</span>
+                                </td>
+                                <td>
+                                    @if (svc.HealthCheckFailures == 0 && svc.LastHealthCheckAt.HasValue)
+                                    {
+                                        <span class="text-success">&#10003;</span>
+                                        <small class="text-muted">@svc.LastHealthCheckAt.Value.ToString("g")</small>
+                                    }
+                                    else if (svc.HealthCheckFailures > 0)
+                                    {
+                                        <span class="text-danger">&#10007;</span>
+                                        <small class="text-danger">@svc.HealthCheckFailures échec(s)</small>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td><small>@svc.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                                <td>
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#editModal-@svc.Id"
+                                            title="Modifier">&#9998;</button>
+                                    <form method="post" asp-page-handler="Delete" asp-route-serviceId="@svc.Id" style="display:inline"
+                                          onsubmit="return confirm('Supprimer ce service ?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer">&#128465;</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <!-- Detail row -->
+                            <tr class="table-light">
+                                <td colspan="7" class="p-2">
+                                    <small class="text-muted">
+                                        <strong>Description :</strong> @(string.IsNullOrEmpty(svc.Description) ? "—" : svc.Description) &nbsp;|&nbsp;
+                                        <strong>Health :</strong> @svc.HealthEndpoint &nbsp;|&nbsp;
+                                        <strong>Créé :</strong> @svc.CreatedAt.ToString("g") &nbsp;|&nbsp;
+                                        <strong>Dernière màj :</strong> @svc.UpdatedAt.ToString("g") &nbsp;|&nbsp;
+                                        <strong>Gateway :</strong> <code>/ext/<strong>@svc.Slug</strong>/**</code>
+                                    </small>
+                                </td>
+                            </tr>
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editModal-@svc.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="post" asp-page-handler="Edit" asp-route-serviceId="@svc.Id">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Modifier @svc.Name</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">URL de base</label>
+                                                    <input name="EditInput.BaseUrl" class="form-control" type="url" value="@svc.BaseUrl" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Description</label>
+                                                    <textarea name="EditInput.Description" class="form-control" rows="2">@svc.Description</textarea>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Endpoint santé</label>
+                                                    <input name="EditInput.HealthEndpoint" class="form-control" value="@svc.HealthEndpoint" />
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Enregistrer un nouveau service</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Input.Name" class="form-label">Nom du service</label>
+                    <input asp-for="Input.Name" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.Slug" class="form-label">Slug <small class="text-muted">(identifiant unique)</small></label>
+                    <input asp-for="Input.Slug" class="form-control" required pattern="[a-z0-9-]+" placeholder="mon-service" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.BaseUrl" class="form-label">URL de base</label>
+                    <input asp-for="Input.BaseUrl" class="form-control" required type="url" placeholder="https://api.monservice.com" />
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Input.HealthEndpoint" class="form-label">Endpoint santé <small class="text-muted">(optionnel)</small></label>
+                    <input asp-for="Input.HealthEndpoint" class="form-control" placeholder="/health" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="Input.Description" class="form-label">Description <small class="text-muted">(optionnelle)</small></label>
+                    <textarea asp-for="Input.Description" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Endpoint Gateway</h5>
+    </div>
+    <div class="card-body">
+        <p class="mb-2">Votre service est accessible publiquement via :</p>
+        <pre class="bg-light p-3 rounded mb-0"><code>GET https://gateway.dotnetniger.com/ext/{slug}/**</code></pre>
+    </div>
+</div>

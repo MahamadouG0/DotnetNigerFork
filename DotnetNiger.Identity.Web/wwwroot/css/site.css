@@ -1,0 +1,68 @@
+/* Brand color via CSS variables (clean, no !important needed) */
+:root {
+    --bs-primary: #512BD4;
+    --bs-primary-rgb: 81, 43, 212;
+}
+
+html { font-size: 14px; scroll-behavior: smooth; }
+@media (min-width: 768px) { html { font-size: 16px; } }
+pre { white-space: pre-wrap; word-break: break-word; }
+
+/* Navbar active link */
+.navbar-dark .navbar-nav .nav-link.active,
+.navbar-dark .navbar-nav .nav-link.show {
+    color: #fff;
+    font-weight: 600;
+    text-shadow: 0 0 6px rgba(255,255,255,0.3);
+}
+
+/* Utility */
+.opacity-90 { opacity: 0.9; }
+
+/* Brand button overrides */
+.btn-primary {
+    --bs-btn-bg: #512BD4;
+    --bs-btn-border-color: #512BD4;
+    --bs-btn-hover-bg: #431fb0;
+    --bs-btn-hover-border-color: #431fb0;
+    --bs-btn-active-bg: #3a1a99;
+    --bs-btn-active-border-color: #3a1a99;
+}
+.btn-outline-primary {
+    --bs-btn-color: #512BD4;
+    --bs-btn-border-color: #512BD4;
+    --bs-btn-hover-bg: #512BD4;
+    --bs-btn-hover-border-color: #512BD4;
+    --bs-btn-active-bg: #431fb0;
+    --bs-btn-active-border-color: #431fb0;
+}
+
+/* Bar animation */
+.bar-anim {
+    animation: barGrow 0.6s ease-out both;
+}
+@keyframes barGrow {
+    from { height: 0 !important; }
+}
+
+/* Card hover */
+.card, .feature-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card:hover, .feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(81, 43, 212, 0.1) !important;
+}
+
+/* Footer links */
+footer a:hover {
+    color: #fff !important;
+    text-decoration: underline !important;
+}
+
+/* Fix outline-light hover on dark backgrounds */
+.btn-outline-light:hover {
+    color: #512BD4 !important;
+    background-color: #fff;
+    border-color: #fff;
+}

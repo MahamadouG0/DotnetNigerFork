@@ -1,0 +1,13 @@
+@page
+@{
+    ViewData["Title"] = "Déconnexion";
+}
+<div class="container py-5 text-center">
+    <i class="bi bi-check-circle text-success" style="font-size:4rem;"></i>
+    <h2 class="mt-3 mb-3">Déconnexion réussie</h2>
+    <p class="text-muted mb-4">Vous avez été déconnecté.</p>
+    <form method="post">
+        <button type="submit" class="btn btn-primary" name="handler" value="Logout">Se reconnecter</button>
+        <a href="/" class="btn btn-outline-secondary">Accueil</a>
+    </form>
+</div>

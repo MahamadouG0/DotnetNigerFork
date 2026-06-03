@@ -1,0 +1,182 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var _page = ViewContext.RouteData.Values["page"]?.ToString() ?? "";
+    bool IsActive(string path) => string.Equals(_page, path, StringComparison.OrdinalIgnoreCase);
+    bool IsAdmin = User.Identity?.IsAuthenticated == true && User.HasClaim(c => c.Type == "role" && c.Value == "Admin");
+    var identityUrl = Configuration["Identity:BaseUrl"]?.TrimEnd('/');
+}
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — DotnetNiger</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="bi bi-shield-check me-1"></i>DotnetNiger
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link @(IsActive("/Index") || _page == "" ? "active" : "")" href="/">Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(IsActive("/Docs") ? "active" : "")" href="/Docs">Documentation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="@identityUrl/swagger" target="_blank">API</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(IsActive("/Support") ? "active" : "")" href="/Support">Support</a>
+                    </li>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-code-square me-1"></i>Développeur</a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="/Developer/Dashboard"><i class="bi bi-speedometer2 me-2"></i>Tableau de bord</a></li>
+                                <li><a class="dropdown-item" href="/Developer/ApiKeys"><i class="bi bi-key me-2"></i>Clés API</a></li>
+                                <li><a class="dropdown-item" href="/Developer/Services"><i class="bi bi-boxes me-2"></i>Services</a></li>
+                                <li><a class="dropdown-item" href="/Developer/Docs"><i class="bi bi-file-earmark-text me-2"></i>Documentation</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="/Developer/Securite"><i class="bi bi-shield-lock me-2"></i>Sécurité</a></li>
+                                <li><a class="dropdown-item" href="/Developer/Gdpr"><i class="bi bi-shield-check me-2"></i>RGPD</a></li>
+                                <li><a class="dropdown-item" href="/Developer/Profile"><i class="bi bi-person me-2"></i>Profil</a></li>
+                            </ul>
+                        </li>
+                        if (IsAdmin)
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-shield-fill me-1"></i>Administration <span class="badge bg-danger ms-1">Admin</span></a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="/Developer/Admin/Index"><i class="bi bi-speedometer2 me-2"></i>Tableau de bord</a></li>
+                                    <li><a class="dropdown-item" href="/Developer/Admin/Tenants"><i class="bi bi-buildings me-2"></i>Tenants</a></li>
+                                </ul>
+                            </li>
+                        }
+                    }
+                </ul>
+                <ul class="navbar-nav">
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Developer/Profile">
+                                <i class="bi bi-person-circle me-1"></i>@User.Identity.Name
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Account/Logout">Déconnexion</a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" href="/Account/Login"><i class="bi bi-lock me-1"></i>Connexion</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-light btn-sm text-primary fw-bold ms-2" href="@identityUrl/Account/Register">Créer un compte</a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="@(ViewData["FullWidth"] is true ? "" : "container py-4")">
+        @RenderBody()
+    </main>
+
+    <footer class="bg-dark text-light py-5">
+        <div class="container">
+            <div class="row gy-4">
+                <div class="col-md-3">
+                    <h5 class="fw-bold"><i class="bi bi-shield-check me-1"></i>DotnetNiger</h5>
+                    <p class="text-light-emphasis small">Plateforme de gestion d'authentification et de services.</p>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="fw-bold mb-3">Liens rapides</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="/" class="link-light text-decoration-none">Accueil</a></li>
+                        <li class="mb-2"><a href="/Docs" class="link-light text-decoration-none">Documentation</a></li>
+                        <li class="mb-2"><a href="@identityUrl/swagger" class="link-light text-decoration-none" target="_blank">API</a></li>
+                        <li class="mb-2"><a href="/Support" class="link-light text-decoration-none">Support</a></li>
+                        <li class="mb-2"><a href="/Securite" class="link-light text-decoration-none">Sécurité</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="fw-bold mb-3">Ressources développeurs</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="/Docs#demarrage" class="link-light text-decoration-none">Guides d'intégration</a></li>
+                        <li class="mb-2"><a href="/Docs#exemples" class="link-light text-decoration-none">Exemples de code</a></li>
+                        <li class="mb-2"><a href="/Status" class="link-light text-decoration-none">Statut des services</a></li>
+                        <li class="mb-2"><a href="/Support#faq" class="link-light text-decoration-none">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h6 class="fw-bold mb-3">Légal</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="/ConditionsUtilisation" class="link-light text-decoration-none">Conditions d'utilisation</a></li>
+                        <li class="mb-2"><a href="/Confidentialite" class="link-light text-decoration-none">Politique de confidentialité</a></li>
+                        <li class="mb-2"><a href="/Securite" class="link-light text-decoration-none">Sécurité</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="border-secondary my-4">
+            <div class="row gy-4 align-items-center">
+                <div class="col-md-4">
+                    <h6 class="fw-bold mb-2">Support</h6>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-1"><a href="mailto:support@dotnetniger.com" class="link-light text-decoration-none">support@dotnetniger.com</a></li>
+                        <li><a href="/Support" class="link-light text-decoration-none">Centre d'aide</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 text-md-center">
+                    <h6 class="fw-bold mb-2">Réseaux</h6>
+                    <div>
+                        <a href="#" class="link-light me-3"><i class="bi bi-github fs-5"></i></a>
+                        <a href="#" class="link-light me-3"><i class="bi bi-discord fs-5"></i></a>
+                        <a href="#" class="link-light me-3"><i class="bi bi-twitter-x fs-5"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <p class="text-light-emphasis small mb-0">&copy; 2026 DotnetNiger. Tous droits réservés.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Delete confirmation modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Voulez-vous vraiment supprimer cet élément ?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-danger">Supprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

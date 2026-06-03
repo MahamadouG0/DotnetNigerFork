@@ -2,8 +2,10 @@
   <Project Path="DotnetNiger.Community/DotnetNiger.Community.csproj" Id="d8b225e3-a3c5-4cf7-8a1d-aa626c39f4dd" />
   <Project Path="DotnetNiger.Gateway/DotnetNiger.Gateway.csproj" />
   <Project Path="DotnetNiger.Identity/DotnetNiger.Identity.csproj" Id="265ec61b-c9ec-464d-bb9b-9fd9493f5e4d" />
-  <Project Path="DotnetNiger.Tests/DotnetNiger.Identity.Tests/DotnetNiger.Identity.Tests.csproj" />
   <Project Path="DotnetNiger.Tests/DotnetNiger.Identity.IntegrationTests/DotnetNiger.Identity.IntegrationTests.csproj" />
+  <Project Path="DotnetNiger.TestIdentity/DotnetNiger.TestIdentity.csproj" />
   <Project Path="DotnetNiger.Tests/DotnetNiger.Architecture.Tests/DotnetNiger.Architecture.Tests.csproj" />
   <Project Path="DotnetNiger.Tests/DotnetNiger.Community.Tests/DotnetNiger.Community.Tests.csproj" />
+  <Project Path="DotnetNiger.Tests/DotnetNiger.Identity.Tests/DotnetNiger.Identity.Tests.csproj" />
+  <Project Path="DotnetNiger.Identity.Web/DotnetNiger.Identity.Web.csproj" />
 </Solution>

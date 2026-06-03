@@ -1,0 +1,30 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.SecuriteModel
+@{
+    ViewData["Title"] = "Sécurité";
+}
+<div class="container py-5" style="max-width:800px;">
+    <h1 class="fw-bold mb-2">Sécurité</h1>
+    <p class="text-muted mb-5">Comment DotnetNiger protège vos données et vos API.</p>
+
+    <h5 class="fw-bold">Chiffrement</h5>
+    <p class="text-muted mb-4">Toutes les données sont chiffrées au repos (AES-256) et en transit (TLS 1.3). Les clés de chiffrement sont gérées avec rotation automatique.</p>
+
+    <h5 class="fw-bold">Authentification</h5>
+    <p class="text-muted mb-4">Utilisation de JSON Web Tokens (JWT) signés avec RS256. Support d'OpenID Connect et OAuth 2.0. Les tokens ont une durée de vie limitée avec refresh automatique.</p>
+
+    <h5 class="fw-bold">Protection API</h5>
+    <p class="text-muted mb-4">Rate limiting global (500 req/min/IP) et par endpoint (10 req/min pour l'auth). Validation des entrées, protection CSRF et anti-XSS.</p>
+
+    <h5 class="fw-bold">Gestion des sessions</h5>
+    <p class="text-muted mb-4">Sessions sécurisées avec révocation à distance. Possibilité de forcer la déconnexion de tous les appareils.</p>
+
+    <h5 class="fw-bold">Clés API</h5>
+    <p class="text-muted mb-4">Les clés API sont stockées sous forme de hash (bcrypt). Rotation et révocation à tout moment depuis le dashboard.</p>
+
+    <h5 class="fw-bold">Infrastructure</h5>
+    <p class="text-muted mb-4">Isolation multi-tenant complète. Accès aux données restreint par tenant. Audit logging de toutes les opérations sensibles.</p>
+
+    <h5 class="fw-bold">Conformité</h5>
+    <p class="text-muted">DotnetNiger applique les bonnes pratiques OWASP et les recommandations du NIST pour la gestion des identités.</p>
+</div>

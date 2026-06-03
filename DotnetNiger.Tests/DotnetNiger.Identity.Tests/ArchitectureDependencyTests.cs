@@ -9,7 +9,7 @@ public class ArchitectureDependencyTests
     public void IdentityApplication_MustNotReference_IdentityInfrastructureRepositoriesNamespace()
     {
         var applicationPath = Path.GetFullPath(
-            Path.Combine(AppContext.BaseDirectory, "../../../../DotnetNiger.Identity/Application"));
+            Path.Combine(AppContext.BaseDirectory, "../../../../../DotnetNiger.Identity/Application"));
 
         Assert.True(Directory.Exists(applicationPath), $"Application folder not found: {applicationPath}");
 

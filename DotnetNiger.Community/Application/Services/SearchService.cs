@@ -8,73 +8,53 @@ public class SearchService(AppDbContext db) : ISearchService
 {
     public async Task<PaginatedResponse<SearchResultResponse>> SearchAsync(SearchQueryRequest request)
     {
+        request.Page = Math.Max(1, request.Page);
+        request.PageSize = Math.Clamp(request.PageSize, 1, ValidationConstants.MaxPageSize);
+
+        var query = request.Query?.Trim();
+        var type = request.Type?.Trim();
+
         var results = new List<SearchResultResponse>();
 
-        if (string.IsNullOrWhiteSpace(request.Type) || request.Type == "Post")
+        if (string.IsNullOrWhiteSpace(type) || type == "Post")
         {
-            var q = db.Posts.Where(p => p.IsPublished);
-            if (!string.IsNullOrWhiteSpace(request.Query))
-                q = q.Where(p => p.Title.Contains(request.Query) || p.Content.Contains(request.Query));
-
-            var posts = await q
-                .OrderByDescending(p => p.PublishedAt)
+            var posts = db.Posts.Where(p => p.IsPublished)
                 .Select(p => new SearchResultResponse
                 {
-                    Type = "Post",
-                    Id = p.Id,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    Excerpt = p.Excerpt,
-                    Content = p.Content,
-                    CoverImageUrl = p.CoverImageUrl,
+                    Type = "Post", Id = p.Id, Title = p.Title, Slug = p.Slug,
+                    Excerpt = p.Excerpt, Content = p.Content, CoverImageUrl = p.CoverImageUrl,
                     CreatedAt = p.CreatedAt
-                })
-                .ToListAsync();
-            results.AddRange(posts);
+                });
+            if (!string.IsNullOrWhiteSpace(query))
+                posts = posts.Where(p => p.Title!.Contains(query) || p.Content!.Contains(query));
+            results.AddRange(await posts.ToListAsync());
         }
 
-        if (string.IsNullOrWhiteSpace(request.Type) || request.Type == "Event")
+        if (string.IsNullOrWhiteSpace(type) || type == "Event")
         {
-            var q = db.Events.Where(e => e.IsPublished);
-            if (!string.IsNullOrWhiteSpace(request.Query))
-                q = q.Where(e => e.Title.Contains(request.Query) || e.Description.Contains(request.Query));
-
-            var events = await q
-                .OrderByDescending(e => e.StartDate)
+            var events = db.Events.Where(e => e.IsPublished)
                 .Select(e => new SearchResultResponse
                 {
-                    Type = "Event",
-                    Id = e.Id,
-                    Title = e.Title,
-                    Slug = e.Slug,
-                    Description = e.Description,
-                    CoverImageUrl = e.CoverImageUrl,
-                    StartDateTime = e.StartDate,
-                    CreatedAt = e.CreatedAt
-                })
-                .ToListAsync();
-            results.AddRange(events);
+                    Type = "Event", Id = e.Id, Title = e.Title, Slug = e.Slug,
+                    Description = e.Description, CoverImageUrl = e.CoverImageUrl,
+                    StartDateTime = e.StartDate, CreatedAt = e.CreatedAt
+                });
+            if (!string.IsNullOrWhiteSpace(query))
+                events = events.Where(e => e.Title!.Contains(query) || e.Description!.Contains(query));
+            results.AddRange(await events.ToListAsync());
         }
 
-        if (string.IsNullOrWhiteSpace(request.Type) || request.Type == "Resource")
+        if (string.IsNullOrWhiteSpace(type) || type == "Resource")
         {
-            var q = db.Resources.AsQueryable();
-            if (!string.IsNullOrWhiteSpace(request.Query))
-                q = q.Where(r => r.Title.Contains(request.Query) || r.Description.Contains(request.Query));
-
-            var resources = await q
-                .OrderByDescending(r => r.CreatedAt)
+            var resources = db.Resources
                 .Select(r => new SearchResultResponse
                 {
-                    Type = "Resource",
-                    Id = r.Id,
-                    Title = r.Title,
-                    Slug = r.Slug,
-                    Description = r.Description,
-                    CreatedAt = r.CreatedAt
-                })
-                .ToListAsync();
-            results.AddRange(resources);
+                    Type = "Resource", Id = r.Id, Title = r.Title, Slug = r.Slug,
+                    Description = r.Description, CreatedAt = r.CreatedAt
+                });
+            if (!string.IsNullOrWhiteSpace(query))
+                resources = resources.Where(r => r.Title!.Contains(query) || r.Description!.Contains(query));
+            results.AddRange(await resources.ToListAsync());
         }
 
         var total = results.Count;
@@ -86,10 +66,7 @@ public class SearchService(AppDbContext db) : ISearchService
 
         return new PaginatedResponse<SearchResultResponse>
         {
-            Items = items,
-            TotalCount = total,
-            Page = request.Page,
-            PageSize = request.PageSize
+            Items = items, TotalCount = total, Page = request.Page, PageSize = request.PageSize
         };
     }
 }

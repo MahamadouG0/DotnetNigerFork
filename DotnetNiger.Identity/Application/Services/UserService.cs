@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using DotnetNiger.Identity.Domain.Entities;
 using DotnetNiger.Identity.Infrastructure;
 using DotnetNiger.Identity.Application.DTOs;
@@ -10,11 +11,16 @@ public class UserService
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IdentityDbContext _db;
+    private readonly IEmailSender<ApplicationUser> _emailSender;
+    private readonly SmtpOptions _smtp;
 
-    public UserService(UserManager<ApplicationUser> userManager, IdentityDbContext db)
+    public UserService(UserManager<ApplicationUser> userManager, IdentityDbContext db,
+        IEmailSender<ApplicationUser> emailSender, IOptions<SmtpOptions> smtp)
     {
         _userManager = userManager;
         _db = db;
+        _emailSender = emailSender;
+        _smtp = smtp.Value;
     }
 
     public async Task<UserResponse> CreateAsync(CreateUserRequest request)
@@ -38,30 +44,45 @@ public class UserService
         return MapToResponse(user, roles);
     }
 
-    public async Task<UserResponse?> GetByIdAsync(Guid id)
+    public async Task<UserResponse?> GetByIdAsync(Guid tenantId, Guid id)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
-        if (user == null) return null;
+        if (user == null || user.TenantId != tenantId) return null;
         var roles = await _userManager.GetRolesAsync(user);
         return MapToResponse(user, roles);
     }
 
-    public async Task<List<UserResponse>> GetByTenantAsync(Guid tenantId)
+    public async Task<PaginatedResponse<UserResponse>> GetByTenantAsync(Guid tenantId, PaginationQuery pagination)
     {
-        var users = await _db.Users.Where(u => u.TenantId == tenantId).ToListAsync();
-        var result = new List<UserResponse>();
-        foreach (var user in users)
-        {
-            var roles = await _userManager.GetRolesAsync(user);
-            result.Add(MapToResponse(user, roles));
-        }
-        return result;
+        var query = _db.Users.Where(u => u.TenantId == tenantId);
+        var total = await query.CountAsync();
+        var users = await query
+            .OrderBy(u => u.Email)
+            .Skip((pagination.EnsurePage - 1) * pagination.EnsurePageSize)
+            .Take(pagination.EnsurePageSize)
+            .ToListAsync();
+
+        var userIds = users.Select(u => u.Id).ToList();
+        var roleMappings = userIds.Count == 0
+            ? []
+            : await _db.UserRoles
+                .Where(ur => userIds.Contains(ur.UserId))
+                .Join(_db.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, RoleName = r.Name! })
+                .ToListAsync();
+
+        var rolesByUser = roleMappings
+            .GroupBy(x => x.UserId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.RoleName).ToList());
+
+        return new PaginatedResponse<UserResponse>(
+            users.Select(u => MapToResponse(u, rolesByUser.GetValueOrDefault(u.Id, []))).ToList(),
+            total, pagination.EnsurePage, pagination.EnsurePageSize);
     }
 
-    public async Task<UserResponse> UpdateAsync(Guid id, UpdateUserRequest request)
+    public async Task<UserResponse> UpdateAsync(Guid tenantId, Guid id, UpdateUserRequest request)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
-        if (user == null) throw new KeyNotFoundException("Utilisateur non trouvé");
+        if (user == null || user.TenantId != tenantId) throw new KeyNotFoundException("Utilisateur non trouvé");
 
         if (request.FirstName != null) user.FirstName = request.FirstName;
         if (request.LastName != null) user.LastName = request.LastName;
@@ -76,16 +97,16 @@ public class UserService
         return MapToResponse(user, roles);
     }
 
-    public async Task DeleteAsync(Guid id)
+    public async Task DeleteAsync(Guid tenantId, Guid id)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
-        if (user != null) await _userManager.DeleteAsync(user);
+        if (user != null && user.TenantId == tenantId) await _userManager.DeleteAsync(user);
     }
 
-    public async Task<UserResponse> ChangePasswordAsync(Guid id, ChangePasswordRequest request)
+    public async Task<UserResponse> ChangePasswordAsync(Guid tenantId, Guid id, ChangePasswordRequest request)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
-        if (user == null) throw new KeyNotFoundException("Utilisateur non trouvé");
+        if (user == null || user.TenantId != tenantId) throw new KeyNotFoundException("Utilisateur non trouvé");
 
         var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
         if (!result.Succeeded)
@@ -98,10 +119,13 @@ public class UserService
     public async Task ForgotPasswordAsync(string email)
     {
         var user = await _userManager.FindByEmailAsync(email);
-        if (user != null)
-        {
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        }
+        if (user == null)
+            throw new KeyNotFoundException("Utilisateur non trouvé");
+
+        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        var resetLink = $"{_smtp.AppBaseUrl.TrimEnd('/')}/Account/ResetPassword?email={Uri.EscapeDataString(email)}&code={Uri.EscapeDataString(token)}";
+
+        await _emailSender.SendPasswordResetLinkAsync(user, email, resetLink);
     }
 
     public async Task ResetPasswordAsync(string email, string token, string newPassword)

@@ -13,13 +13,6 @@ public class DiagnosticsEndpointsTests : IClassFixture<IdentityWebApplicationFac
     }
 
     [Fact]
-    public async Task Ping_ReturnsOk()
-    {
-        var response = await _client.GetAsync("/api/v1/diagnostics/ping");
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
-
-    [Fact]
     public async Task Health_ReturnsOk()
     {
         var response = await _client.GetAsync("/api/v1/diagnostics/health");

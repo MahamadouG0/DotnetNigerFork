@@ -16,6 +16,8 @@ public class SmtpOptions
     public string Password { get; set; } = "";
     public string FromEmail { get; set; } = "noreply@dotnetniger.com";
     public string FromName { get; set; } = "DotnetNiger";
+    public string AppName { get; set; } = "DotnetNiger";
+    public string AppSubtitle { get; set; } = "";
     public string AppBaseUrl { get; set; } = "http://localhost:5075";
 }
 
@@ -41,8 +43,8 @@ public class EmailSender : IEmailSender<ApplicationUser>
       <table width=""560"" cellpadding=""0"" cellspacing=""0"" style=""background-color:#ffffff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);overflow:hidden"">
         <tr>
           <td style=""padding:32px 40px 24px;background:linear-gradient(135deg,#512BD4,#6b3ff5)"">
-            <h1 style=""color:#ffffff;margin:0;font-size:22px;font-weight:600;letter-spacing:0.5px"">DotnetNiger</h1>
-            <p style=""color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px"">Identity Provider</p>
+            <h1 style=""color:#ffffff;margin:0;font-size:22px;font-weight:600;letter-spacing:0.5px"">{_smtp.AppName}</h1>
+            {(string.IsNullOrEmpty(_smtp.AppSubtitle) ? "" : $"<p style=\"color:rgba(255,255,255,0.8);margin:4px 0 0;font-size:13px\">{_smtp.AppSubtitle}</p>")}
           </td>
         </tr>
         <tr><td style=""padding:32px 40px;color:#333333"">
@@ -51,7 +53,7 @@ public class EmailSender : IEmailSender<ApplicationUser>
         </td></tr>
         <tr>
           <td style=""padding:16px 40px;border-top:1px solid #e8e8e8;font-size:12px;color:#999999;text-align:center"">
-            DotnetNiger Identity &mdash; &copy; 2026
+            {_smtp.AppName} &mdash; &copy; 2026
           </td>
         </tr>
       </table>
@@ -89,9 +91,9 @@ public class EmailSender : IEmailSender<ApplicationUser>
 
     public Task SendConfirmationLinkAsync(ApplicationUser user, string email, string confirmationLink)
     {
-        return SendEmailAsync(email, "Confirmez votre adresse email — DotnetNiger",
+        return SendEmailAsync(email, $"Confirmez votre adresse email — {_smtp.AppName}",
             BuildTemplate(
-                "Bienvenue sur DotnetNiger",
+                $"Bienvenue sur {_smtp.AppName}",
                 $@"<p>Bonjour {user.FirstName ?? ""},</p>
 <p>Merci de vous être inscrit. Veuillez confirmer votre adresse email pour activer votre compte.</p>
 <p style=""text-align:center;margin:24px 0"">
@@ -103,7 +105,7 @@ public class EmailSender : IEmailSender<ApplicationUser>
 
     public Task SendPasswordResetLinkAsync(ApplicationUser user, string email, string resetLink)
     {
-        return SendEmailAsync(email, "Réinitialisation de mot de passe — DotnetNiger",
+        return SendEmailAsync(email, $"Réinitialisation de mot de passe — {_smtp.AppName}",
             BuildTemplate(
                 "Réinitialisation de mot de passe",
                 $@"<p>Bonjour {user.FirstName ?? ""},</p>
@@ -116,7 +118,7 @@ public class EmailSender : IEmailSender<ApplicationUser>
 
     public Task SendPasswordResetCodeAsync(ApplicationUser user, string email, string resetCode)
     {
-        return SendEmailAsync(email, "Code de réinitialisation — DotnetNiger",
+        return SendEmailAsync(email, $"Code de réinitialisation — {_smtp.AppName}",
             BuildTemplate(
                 "Code de réinitialisation",
                 $@"<p>Bonjour {user.FirstName ?? ""},</p>
@@ -125,13 +127,26 @@ public class EmailSender : IEmailSender<ApplicationUser>
 <p style=""font-size:13px;color:#666"">Ce code expire dans 15 minutes.</p>"));
     }
 
+    public Task SendInviteEmailAsync(string email, string inviteUrl, string role)
+    {
+        return SendEmailAsync(email, $"Vous avez été invité sur {_smtp.AppName}",
+            BuildTemplate(
+                "Invitation à rejoindre",
+                $@"<p>Bonjour,</p>
+<p>Vous avez été invité à rejoindre {_smtp.AppName} en tant que <strong>{role}</strong>.</p>
+<p style=""text-align:center;margin:24px 0"">
+  <a href=""{inviteUrl}"" style=""display:inline-block;padding:12px 28px;background:#512BD4;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:600"">Accepter l'invitation</a>
+</p>
+<p style=""font-size:13px;color:#666"">Cette invitation expire dans 48 heures.</p>"));
+    }
+
     public Task SendConfirmationCodeAsync(ApplicationUser user, string email, string code, string? confirmationLink = null)
     {
-        return SendEmailAsync(email, "Votre code de confirmation — DotnetNiger",
+        return SendEmailAsync(email, $"Votre code de confirmation — {_smtp.AppName}",
             BuildTemplate(
                 "Confirmez votre inscription",
                 $@"<p>Bonjour {user.FirstName ?? ""},</p>
-<p>Utilisez le code ci-dessous pour activer votre compte DotnetNiger&nbsp;:</p>
+<p>Utilisez le code ci-dessous pour activer votre compte {_smtp.AppName}&nbsp;:</p>
 <p style=""text-align:center;margin:24px 0;padding:16px;background:#f5f2ff;border-radius:8px"">
   <span style=""font-size:36px;font-weight:700;letter-spacing:10px;color:#512BD4;font-family:'Courier New',monospace"">{code}</span>
 </p>

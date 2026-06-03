@@ -68,3 +68,38 @@ public class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequ
         RuleFor(x => x.NewPassword).NotEmpty().MinimumLength(8);
     }
 }
+
+public class CreateTenantClientRequestValidator : AbstractValidator<CreateTenantClientRequest>
+{
+    public CreateTenantClientRequestValidator()
+    {
+        RuleFor(x => x.ClientName).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.RedirectUris)
+            .Must(BeValidJsonUriList)
+            .When(x => x.RedirectUris != null)
+            .WithMessage("Les redirect URIs doivent être un tableau JSON valide d'URLs");
+        RuleFor(x => x.PostLogoutRedirectUris)
+            .Must(BeValidJsonUriList)
+            .When(x => x.PostLogoutRedirectUris != null)
+            .WithMessage("Les post-logout redirect URIs doivent être un tableau JSON valide d'URLs");
+    }
+
+    private static bool BeValidJsonUriList(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return true;
+        try
+        {
+            var uris = System.Text.Json.JsonSerializer.Deserialize<List<string>>(json);
+            return uris != null && uris.All(u => Uri.TryCreate(u, UriKind.Absolute, out _));
+        }
+        catch { return false; }
+    }
+}
+
+public class CreateTenantApiKeyRequestValidator : AbstractValidator<CreateTenantApiKeyRequest>
+{
+    public CreateTenantApiKeyRequestValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+    }
+}

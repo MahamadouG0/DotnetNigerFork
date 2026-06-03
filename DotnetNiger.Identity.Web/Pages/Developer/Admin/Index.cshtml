@@ -1,0 +1,96 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.Developer.Admin.IndexModel
+@{
+    ViewData["Title"] = "Administration";
+    // Layout géré par _ViewStart.cshtml
+}
+
+<h1>Administration</h1>
+<p class="lead">Gestion de la plateforme DotnetNiger.</p>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <h2 class="text-primary">@Model.Stats.TenantCount</h2>
+                <p class="text-muted mb-0">Tenants</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <h2 class="text-success">@Model.Stats.UserCount</h2>
+                <p class="text-muted mb-0">Utilisateurs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <h2 class="text-info">@Model.Stats.RoleCount</h2>
+                <p class="text-muted mb-0">Rôles</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <h2 class="text-warning">@Model.Stats.PermissionCount</h2>
+                <p class="text-muted mb-0">Permissions</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <h2 class="text-secondary">@Model.Stats.ApiKeyCount</h2>
+                <p class="text-muted mb-0">Clés API</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <h2 class="text-secondary">@Model.Stats.ServiceCount</h2>
+                <p class="text-muted mb-0">Services</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center py-4">
+            <div class="card-body">
+                <h2 class="text-secondary">@Model.Stats.ClientCount</h2>
+                <p class="text-muted mb-0">Clients OAuth2</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Actions rapides</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <a href="/Developer/Admin/Tenants" class="btn btn-outline-primary w-100 p-3">
+                    <strong>Gérer les tenants</strong><br>
+                    <small class="text-muted">Créer, modifier, supprimer</small>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Developer/ApiKeys" class="btn btn-outline-success w-100 p-3">
+                    <strong>Clés API</strong><br>
+                    <small class="text-muted">Gérer les clés d'accès</small>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="/Developer/Services" class="btn btn-outline-info w-100 p-3">
+                    <strong>Services externes</strong><br>
+                    <small class="text-muted">APIs enregistrées</small>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

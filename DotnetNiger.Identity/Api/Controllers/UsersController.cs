@@ -7,6 +7,7 @@ namespace DotnetNiger.Identity.Api.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
+
 [Route("api/v{version:apiVersion}/{tenantId:guid}/users")]
 [Authorize(Roles = "Admin")]
 public class UsersController : ControllerBase
@@ -30,17 +31,18 @@ public class UsersController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<UserResponse>> GetById(Guid tenantId, Guid id)
     {
-        var user = await _userService.GetByIdAsync(id);
+        var user = await _userService.GetByIdAsync(tenantId, id);
         if (user == null) return NotFound(new ErrorResponse("Utilisateur non trouvé"));
         return Ok(user);
     }
 
-    /// <summary>Liste tous les utilisateurs du tenant.</summary>
+    /// <summary>Liste tous les utilisateurs du tenant (paginated).</summary>
     [HttpGet]
-    public async Task<ActionResult<List<UserResponse>>> GetAll(Guid tenantId)
+    public async Task<ActionResult<PaginatedResponse<UserResponse>>> GetAll(Guid tenantId,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var users = await _userService.GetByTenantAsync(tenantId);
-        return Ok(users);
+        var result = await _userService.GetByTenantAsync(tenantId, new PaginationQuery(page, pageSize));
+        return Ok(result);
     }
 
     /// <summary>Met à jour un utilisateur (prénom, nom, avatar, statut).</summary>
@@ -48,7 +50,7 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<UserResponse>> Update(Guid tenantId, Guid id,
         [FromBody] UpdateUserRequest request)
     {
-        var user = await _userService.UpdateAsync(id, request);
+        var user = await _userService.UpdateAsync(tenantId, id, request);
         return Ok(user);
     }
 
@@ -56,7 +58,7 @@ public class UsersController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid tenantId, Guid id)
     {
-        await _userService.DeleteAsync(id);
+        await _userService.DeleteAsync(tenantId, id);
         return NoContent();
     }
 
@@ -65,7 +67,15 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<UserResponse>> ChangePassword(Guid tenantId, Guid id,
         [FromBody] ChangePasswordRequest request)
     {
-        var user = await _userService.ChangePasswordAsync(id, request);
+        var user = await _userService.ChangePasswordAsync(tenantId, id, request);
         return Ok(user);
+    }
+
+    /// <summary>Envoie un email de réinitialisation de mot de passe à un utilisateur.</summary>
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        await _userService.ForgotPasswordAsync(request.Email);
+        return Ok(new { message = "Un lien de réinitialisation a été envoyé par email." });
     }
 }

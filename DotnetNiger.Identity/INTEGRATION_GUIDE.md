@@ -1,19 +1,38 @@
-# Guide d'Intégration — DotnetNiger.Identity
+# Integration Guide — DotnetNiger.Identity
 
-## 🔑 Prérequis
+Complete guide for integrating client applications with the DotnetNiger Identity service.
 
-- .NET 9.0+
-- Un projet client (API, Web, Mobile)
-- Package NuGet : `Microsoft.AspNetCore.Authentication.JwtBearer`
+## Table of Contents
+
+1. [Prerequisites](#1-prerequisites)
+2. [Client-Side JWT Configuration](#2-client-side-jwt-configuration)
+3. [Authentication Endpoints](#3-authentication-endpoints)
+4. [Authentication Flows](#4-authentication-flows)
+5. [User, Role & Permission Management](#5-user-role--permission-management)
+6. [Multi-Tenancy](#6-multi-tenancy)
+7. [Complete cURL Examples](#7-complete-curl-examples)
+8. [SMTP Configuration](#8-smtp-configuration)
+9. [OAuth Provider Setup](#9-oauth-provider-setup)
+10. [JWKS & Token Validation](#10-jwks--token-validation)
+11. [Test Credentials](#11-test-credentials)
 
 ---
 
-## 1. Configuration côté client
+## 1. Prerequisites
 
-### Ajouter l'authentification JWT avec JWKS
+- .NET 9.0+ SDK
+- A client application (Web, Mobile, or API)
+- NuGet package: `Microsoft.AspNetCore.Authentication.JwtBearer`
+
+---
+
+## 2. Client-Side JWT Configuration
+
+### For ASP.NET Core Clients (e.g., Community service)
 
 ```csharp
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 builder.Services.AddAuthentication(options =>
 {
@@ -36,77 +55,150 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 ```
 
-> **JWKS (JSON Web Key Set)** : Le endpoint `/.well-known/jwks` expose les clés publiques RSA de OpenIddict. Le client les récupère automatiquement via le `MetadataAddress` pour valider la signature des tokens. Pas besoin de partager une clé secrète.
+The client automatically fetches public keys from the JWKS endpoint (`/.well-known/jwks`) to validate token signatures. No shared secret needed.
+
+### For the Gateway (symmetric key validation)
+
+The Gateway uses a shared symmetric key for JWT validation (must match Identity's configuration):
+
+```json
+{
+  "Jwt": {
+    "Key": "SharedSecretKeyMin32CharactersLong!",
+    "Issuer": "DotnetNiger.Identity",
+    "Audience": "DotnetNiger.Identity.Client"
+  }
+}
+```
 
 ---
 
-## 2. Endpoints disponibles
+## 3. Authentication Endpoints
 
-### Authentification
+### Token Endpoint (OpenIddict)
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| POST | `/connect/token` | Échange identifiants contre JWT (form-data) |
-| POST | `/api/v1/auth/register` | Créer un compte (body : email, password, firstName, lastName) |
-| POST | `/api/v1/auth/confirm-email` | Valider l'email avec le code (body : email, code) |
-| GET | `/api/v1/auth/confirm-email` | Valider l'email via lien cliquable (query : email, code) |
-| POST | `/api/v1/auth/resend-code` | Renvoyer le code de confirmation |
-| POST | `/api/v1/auth/login` | Login JSON (body : email, password, tenantId, rememberMe) |
-| POST | `/api/v1/auth/logout` | Déconnexion (token requis) |
-| GET | `/api/v1/auth/userinfo` | Infos utilisateur connecté |
-| GET | `/api/v1/auth/external-login` | Login via Google/Microsoft/GitHub |
-| GET | `/api/v1/auth/external-callback` | Callback après login externe (query : returnUrl, rememberMe) |
+| Method | Endpoint         | Content-Type                        | Description                         |
+| ------ | ---------------- | ----------------------------------- | ----------------------------------- |
+| POST   | `/connect/token` | `application/x-www-form-urlencoded` | Get JWT (password or refresh_token) |
 
-### Découverte OpenID Connect
+### Auth Endpoints
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| GET | `/.well-known/openid-configuration` | Métadonnées OIDC |
-| GET | `/.well-known/jwks` | Clés publiques RSA (JWKS) |
+| Method | Endpoint                         | Auth   | Description              |
+| ------ | -------------------------------- | ------ | ------------------------ |
+| POST   | `/api/v1/auth/register`          | —      | Create account           |
+| POST   | `/api/v1/auth/confirm-email`     | —      | Confirm email (JSON)     |
+| GET    | `/api/v1/auth/confirm-email`     | —      | Confirm email (query)    |
+| POST   | `/api/v1/auth/resend-code`       | —      | Resend confirmation code |
+| POST   | `/api/v1/auth/login`             | —      | JSON login               |
+| POST   | `/api/v1/auth/logout`            | Bearer | Logout                   |
+| GET    | `/api/v1/auth/userinfo`          | Bearer | Connected user info      |
+| GET    | `/api/v1/auth/external-login`    | —      | OAuth provider redirect  |
+| GET    | `/api/v1/auth/external-callback` | —      | OAuth callback           |
 
-### Utilisateurs, Rôles, Permissions, Tenants, Profil, Admin
+### Profile Endpoints
 
-(Voir sections ci-dessous)
+| Method | Endpoint          | Auth   | Description                                     |
+| ------ | ----------------- | ------ | ----------------------------------------------- |
+| GET    | `/api/v1/profile` | Bearer | Get own profile                                 |
+| PUT    | `/api/v1/profile` | Bearer | Update profile (firstName, lastName, avatarUrl) |
+| DELETE | `/api/v1/profile` | Bearer | Delete own account                              |
+
+### User Management (Admin)
+
+| Method | Endpoint                                        | Auth  | Description           |
+| ------ | ----------------------------------------------- | ----- | --------------------- |
+| POST   | `/api/v1/{tenantId}/users`                      | Admin | Create user in tenant |
+| GET    | `/api/v1/{tenantId}/users`                      | Admin | List users in tenant  |
+| GET    | `/api/v1/{tenantId}/users/{id}`                 | Admin | Get user by ID        |
+| PUT    | `/api/v1/{tenantId}/users/{id}`                 | Admin | Update user           |
+| DELETE | `/api/v1/{tenantId}/users/{id}`                 | Admin | Delete user           |
+| POST   | `/api/v1/{tenantId}/users/{id}/change-password` | Admin | Change user password  |
+
+### Role Management (Admin)
+
+| Method | Endpoint                                           | Auth  | Description           |
+| ------ | -------------------------------------------------- | ----- | --------------------- |
+| POST   | `/api/v1/{tenantId}/roles`                         | Admin | Create role           |
+| GET    | `/api/v1/{tenantId}/roles`                         | Admin | List roles            |
+| PUT    | `/api/v1/{tenantId}/roles/{id}`                    | Admin | Update role           |
+| DELETE | `/api/v1/{tenantId}/roles/{id}`                    | Admin | Delete role           |
+| POST   | `/api/v1/{tenantId}/roles/{roleId}/users/{userId}` | Admin | Assign user to role   |
+| DELETE | `/api/v1/{tenantId}/roles/{roleId}/users/{userId}` | Admin | Remove user from role |
+| GET    | `/api/v1/{tenantId}/roles/user/{userId}`           | Admin | Get user roles        |
+
+### Permission Management (Admin)
+
+| Method | Endpoint                                 | Auth  | Description                     |
+| ------ | ---------------------------------------- | ----- | ------------------------------- |
+| POST   | `/api/v1/{tenantId}/permissions`         | Admin | Create permission               |
+| GET    | `/api/v1/{tenantId}/permissions`         | Admin | List permissions                |
+| GET    | `/api/v1/{tenantId}/permissions/grouped` | Admin | Permissions grouped by category |
+| DELETE | `/api/v1/{tenantId}/permissions/{id}`    | Admin | Delete permission               |
+| POST   | `/api/v1/{tenantId}/permissions/assign`  | Admin | Assign permissions to role      |
+
+### Admin Endpoints
+
+| Method | Endpoint                               | Auth  | Description              |
+| ------ | -------------------------------------- | ----- | ------------------------ |
+| GET    | `/api/v1/admin/stats`                  | Admin | Platform statistics      |
+| CRUD   | `/api/v1/admin/tenants`                | Admin | Tenant management (CRUD) |
+| GET    | `/api/v1/admin/tenants/by-slug/{slug}` | Admin | Get tenant by slug       |
+
+### OpenID Connect Discovery
+
+| Method | Endpoint                            | Description     |
+| ------ | ----------------------------------- | --------------- |
+| GET    | `/.well-known/openid-configuration` | OIDC metadata   |
+| GET    | `/.well-known/jwks`                 | Public RSA keys |
+
+### Diagnostics
+
+| Method | Endpoint                     | Description  |
+| ------ | ---------------------------- | ------------ |
+| GET    | `/api/v1/diagnostics/health` | Health check |
+| GET    | `/api/v1/diagnostics/ping`   | Ping         |
 
 ---
 
-## 3. Flux d'authentification
+## 4. Authentication Flows
 
-### 3.1 Inscription avec confirmation email
+### 4.1 Registration with Email Confirmation
 
 ```http
-# 1. Créer le compte
 POST /api/v1/auth/register
 Content-Type: application/json
 
 {
   "email": "user@example.com",
-  "password": "MonMotDePasse@123",
+  "password": "MyPassword@123",
   "firstName": "Jean",
   "lastName": "Dupont"
 }
 ```
 
-Réponse :
+Response:
+
 ```json
 {
   "message": "Compte créé. Un code de confirmation vous a été envoyé par email.",
-  "userId": "guid-...",
+  "userId": "a1b2c3d4-...",
   "email": "user@example.com",
   "code": "A3F9K2"
 }
 ```
 
-> Le code `code` n'est retourné que si SMTP n'est pas configuré (dev). En production, il est envoyé par email.
+> The `code` field is only returned in development (when SMTP is not configured). In production, the code is sent by email.
 
-### 3.2 Confirmer l'email (2 façons)
+### 4.2 Email Confirmation (Two Methods)
 
-**Méthode 1 — Lien cliquable** : L'email contient un bouton "Confirmer mon compte" qui redirige vers :
+**Method 1 — Clickable Link** (for web clients):
+
 ```
 GET /api/v1/auth/confirm-email?email=user@example.com&code=A3F9K2
 ```
 
-**Méthode 2 — Code manuel** (depuis une app mobile ou une API) :
+**Method 2 — JSON Body** (for API/mobile clients):
+
 ```http
 POST /api/v1/auth/confirm-email
 Content-Type: application/json
@@ -117,7 +209,7 @@ Content-Type: application/json
 }
 ```
 
-### 3.3 Renvoyer le code
+### 4.3 Resend Confirmation Code
 
 ```http
 POST /api/v1/auth/resend-code
@@ -128,26 +220,27 @@ Content-Type: application/json
 }
 ```
 
-### 3.4 Obtenir un JWT
+### 4.4 Get JWT Token (Password Grant)
 
 ```http
 POST /connect/token
 Content-Type: application/x-www-form-urlencoded
 
-grant_type=password&username=user@example.com&password=MonMotDePasse@123&scope=openid+profile+email+roles+offline_access&remember_me=true
+grant_type=password&username=user@example.com&password=MyPassword@123&scope=openid+profile+email+roles+offline_access&remember_me=true
 ```
 
-Paramètres :
+Parameters:
 
-| Paramètre | Requis | Description |
-|-----------|--------|-------------|
-| `grant_type` | Oui | `password` ou `refresh_token` |
-| `username` | Oui | Email de l'utilisateur (pour password grant) |
-| `password` | Oui | Mot de passe (pour password grant) |
-| `scope` | Non | Espaces séparés par `+`. Valeurs : `openid`, `profile`, `email`, `roles`, `api`, `offline_access` |
-| `remember_me` | Non | `true` → token valable 7 jours. `false` ou absent → 1 heure |
+| Parameter     | Required | Description                                                                            |
+| ------------- | -------- | -------------------------------------------------------------------------------------- |
+| `grant_type`  | Yes      | `password` or `refresh_token`                                                          |
+| `username`    | Yes      | User email (for password grant)                                                        |
+| `password`    | Yes      | User password (for password grant)                                                     |
+| `scope`       | No       | Space-separated scopes: `openid`, `profile`, `email`, `roles`, `api`, `offline_access` |
+| `remember_me` | No       | `true` = 7-day token, `false`/absent = 1-hour token                                    |
 
-**Réponse (password grant)** :
+Response:
+
 ```json
 {
   "access_token": "eyJhbG...",
@@ -157,10 +250,10 @@ Paramètres :
 }
 ```
 
-> `expires_in` = 3600 (1h) sans `remember_me`, 604799 (7 jours) avec `remember_me=true`.
-> Le `refresh_token` est retourné uniquement si le scope `offline_access` est demandé.
+> `expires_in` = 3600 (1h) without `remember_me`, 604799 (7 days) with `remember_me=true`.
+> `refresh_token` is only returned when `offline_access` scope is requested.
 
-### 3.5 Rafraîchir le token
+### 4.5 Refresh Token
 
 ```http
 POST /connect/token
@@ -169,15 +262,9 @@ Content-Type: application/x-www-form-urlencoded
 grant_type=refresh_token&refresh_token=eyJhbG...&scope=openid+profile+email+roles+offline_access
 ```
 
-| Paramètre | Requis | Description |
-|-----------|--------|-------------|
-| `grant_type` | Oui | `refresh_token` |
-| `refresh_token` | Oui | Le refresh token obtenu précédemment |
-| `scope` | Non | Doit correspondre aux scopes originaux |
+Response: Same as password grant (new access_token + new refresh_token).
 
-**Réponse** : Identique au password grant (nouvel access_token + nouveau refresh_token).
-
-### 3.6 Login JSON (validation des identifiants)
+### 4.6 JSON Login (Credential Validation)
 
 ```http
 POST /api/v1/auth/login
@@ -185,12 +272,13 @@ Content-Type: application/json
 
 {
   "email": "user@example.com",
-  "password": "MonMotDePasse@123",
+  "password": "MyPassword@123",
   "rememberMe": true
 }
 ```
 
-Réponse :
+Response:
+
 ```json
 {
   "id": "guid-...",
@@ -206,19 +294,20 @@ Réponse :
 }
 ```
 
-> Cet endpoint ne retourne pas de JWT. Il valide les identifiants et retourne les infos utilisateur.
-> Utilisez `/connect/token` pour obtenir un JWT.
+> This endpoint validates credentials but does NOT return a JWT. Use `/connect/token` to obtain tokens.
 
-### 3.7 Login social (Google, Microsoft, GitHub)
+### 4.7 Social Login (Google, Microsoft, GitHub)
 
-**Étape 1** — Rediriger l'utilisateur vers le provider :
+**Step 1** — Redirect user to the provider:
+
 ```
 GET /api/v1/auth/external-login?provider=Google
 ```
 
-**Étape 2** — Le provider redirige vers `/api/v1/auth/external-callback`
+**Step 2** — Provider redirects to `/api/v1/auth/external-callback` with authorization code.
 
-**Étape 3** — Le callback retourne les infos utilisateur :
+**Step 3** — Callback returns user info:
+
 ```json
 {
   "id": "guid",
@@ -233,69 +322,140 @@ GET /api/v1/auth/external-login?provider=Google
 }
 ```
 
-> **Important** : Pour un flow navigateur, le callback doit rediriger vers votre frontend. Configurez `returnUrl` dans l'appel initial. Le JWT doit être obtenu via `/connect/token` avec le grant `password` après création du compte social.
+> For browser flows, the callback should redirect to your frontend. Configure `returnUrl` in the initial call. Obtain JWT via `/connect/token` with `password` grant after social account creation.
 
 ---
 
-## 4. Isolation multi-tenant
+## 5. User, Role & Permission Management
 
-Chaque requête est automatiquement filtrée par `TenantId` via :
-- Le claim `tenant_id` dans le JWT
-- Le header `X-Tenant-Id` pour les endpoints publics
+All admin endpoints are scoped to a tenant (`{tenantId}`) and require the `Admin` role.
+
+### Create a User in a Tenant
+
+```http
+POST /api/v1/{tenantId}/users
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "email": "newuser@example.com",
+  "password": "TempPass@123",
+  "firstName": "New",
+  "lastName": "User",
+  "roles": ["User"]
+}
+```
+
+### Assign Role to User
+
+```http
+POST /api/v1/{tenantId}/roles/{roleId}/users/{userId}
+Authorization: Bearer <admin-token>
+```
+
+### Assign Permissions to Role
+
+```http
+POST /api/v1/{tenantId}/permissions/assign
+Authorization: Bearer <admin-token>
+Content-Type: application/json
+
+{
+  "roleId": "guid-...",
+  "permissionIds": ["guid-1", "guid-2", "guid-3"]
+}
+```
 
 ---
 
-## 5. Exemple complet (cURL)
+## 6. Multi-Tenancy
+
+### Tenant Context Resolution
+
+The Identity service isolates data per tenant using two mechanisms:
+
+1. **JWT Claim** — Authenticated requests read the `tenant_id` claim from the JWT
+2. **X-Tenant-Id Header** — Public endpoints can specify tenant via this header
+
+### Tenant Endpoints (Admin)
+
+| Method | Endpoint                               | Description        |
+| ------ | -------------------------------------- | ------------------ |
+| POST   | `/api/v1/admin/tenants`                | Create tenant      |
+| GET    | `/api/v1/admin/tenants`                | List all tenants   |
+| GET    | `/api/v1/admin/tenants/{id}`           | Get tenant by ID   |
+| GET    | `/api/v1/admin/tenants/by-slug/{slug}` | Get tenant by slug |
+| PUT    | `/api/v1/admin/tenants/{id}`           | Update tenant      |
+| DELETE | `/api/v1/admin/tenants/{id}`           | Delete tenant      |
+
+---
+
+## 7. Complete cURL Examples
 
 ```bash
-# 1. Créer un compte
+#!/bin/bash
+
+# ──────────────────────────────────────────────
+# 1. Register a new account
+# ──────────────────────────────────────────────
 REG=$(curl -s -X POST http://localhost:5075/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@test.com","password":"Demo@123456","firstName":"Demo","lastName":"User"}')
 echo "$REG" | jq .
 CODE=$(echo "$REG" | jq -r '.code')
 
-# 2. Confirmer l'email
+# ──────────────────────────────────────────────
+# 2. Confirm email
+# ──────────────────────────────────────────────
 curl -s -X POST http://localhost:5075/api/v1/auth/confirm-email \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"demo@test.com\",\"code\":\"$CODE\"}" | jq .
 
-# 3. Login (validation des identifiants)
+# ──────────────────────────────────────────────
+# 3. Login (validate credentials)
+# ──────────────────────────────────────────────
 curl -s -X POST http://localhost:5075/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"demo@test.com","password":"Demo@123456","rememberMe":true}' | jq .
 
-# 4. Obtenir un JWT (avec refresh token)
+# ──────────────────────────────────────────────
+# 4. Get JWT (with refresh token)
+# ──────────────────────────────────────────────
 TOKEN_RESP=$(curl -s -X POST http://localhost:5075/connect/token \
   -d "grant_type=password&username=demo@test.com&password=Demo@123456&scope=openid+profile+email+roles+offline_access&remember_me=true")
 ACCESS_TOKEN=$(echo "$TOKEN_RESP" | jq -r '.access_token')
 REFRESH_TOKEN=$(echo "$TOKEN_RESP" | jq -r '.refresh_token')
+echo "Access Token: ${ACCESS_TOKEN:0:50}..."
 
-# 5. Appeler les endpoints protégés
+# ──────────────────────────────────────────────
+# 5. Call protected endpoints
+# ──────────────────────────────────────────────
 curl -s http://localhost:5075/api/v1/auth/userinfo \
   -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 
 curl -s http://localhost:5075/api/v1/profile \
   -H "Authorization: Bearer $ACCESS_TOKEN" | jq .
 
-# 6. Rafraîchir le token
+# ──────────────────────────────────────────────
+# 6. Refresh the token
+# ──────────────────────────────────────────────
 curl -s -X POST http://localhost:5075/connect/token \
   -d "grant_type=refresh_token&refresh_token=$REFRESH_TOKEN&scope=openid+profile+email+roles+offline_access" | jq .
 ```
 
 ---
 
-## 6. Configuration SMTP (emails réels)
+## 8. SMTP Configuration
 
-Dans `appsettings.json` ou `user-secrets` :
+For production email sending (confirmation codes, etc.):
 
 ```json
 {
   "Smtp": {
     "Host": "smtp.gmail.com",
     "Port": 587,
-    "Username": "votre@email.com",
-    "Password": "votre-mot-de-passe",
+    "Username": "your@email.com",
+    "Password": "your-password",
     "FromEmail": "noreply@dotnetniger.com",
     "FromName": "DotnetNiger",
     "AppBaseUrl": "http://localhost:5075"
@@ -303,94 +463,71 @@ Dans `appsettings.json` ou `user-secrets` :
 }
 ```
 
-> Si `Host` est vide (défaut), l'email est loggé dans la console — pas d'envoi réel. Le code de confirmation est alors retourné directement dans la réponse de `/register`.
-
-> `AppBaseUrl` est utilisé pour construire le lien de confirmation dans l'email. Remplacez-la par l'URL réelle de votre déploiement en production.
+- If `Host` is empty, emails are logged to console (dev mode)
+- `AppBaseUrl` is used to build confirmation links in emails
 
 ---
 
-## 7. Création des API Keys OAuth
+## 9. OAuth Provider Setup
 
 ### Google
-1. Aller sur https://console.cloud.google.com/apis/credentials
-2. Créer un projet ou sélectionner un projet existant
-3. Aller dans **APIs & Services** → **Credentials**
-4. Cliquer **Create Credentials** → **OAuth client ID**
-5. **Application type** : Web application
-6. **Authorized redirect URIs** : `http://localhost:5075/signin-google`
-7. Copier le **Client ID** et **Client Secret**
+
+1. Go to https://console.cloud.google.com/apis/credentials
+2. Create OAuth client ID → Web application
+3. Authorized redirect URI: `http://localhost:5075/signin-google`
+4. Copy Client ID and Client Secret
 
 ### Microsoft
-1. Aller sur https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps
-2. Cliquer **New registration**
-3. **Redirect URI** : `http://localhost:5075/signin-microsoft`
-4. Après création, noter le **Application (client) ID**
-5. Aller dans **Certificates & secrets** → **New client secret**
-6. Copier le **Client Secret**
+
+1. Go to https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps
+2. New registration → Redirect URI: `http://localhost:5075/signin-microsoft`
+3. Note Application (client) ID
+4. Certificates & secrets → New client secret
 
 ### GitHub
-1. Aller sur https://github.com/settings/developers
-2. Cliquer **New OAuth App**
-3. **Homepage URL** : `http://localhost:5075`
-4. **Authorization callback URL** : `http://localhost:5075/signin-github`
-5. Copier le **Client ID** et **Client Secret**
 
-### Activer les providers
+1. Go to https://github.com/settings/developers
+2. New OAuth App → Homepage: `http://localhost:5075`, Callback: `http://localhost:5075/signin-github`
+3. Copy Client ID and Client Secret
 
-Dans `appsettings.Development.json` ou `user-secrets` :
+### Activate
 
 ```json
 {
   "Authentication": {
-    "Google": {
-      "ClientId": "votre-id-google",
-      "ClientSecret": "votre-secret-google"
-    },
-    "Microsoft": {
-      "ClientId": "votre-id-microsoft",
-      "ClientSecret": "votre-secret-microsoft"
-    },
-    "GitHub": {
-      "ClientId": "votre-id-github",
-      "ClientSecret": "votre-secret-github"
-    }
+    "Google": { "ClientId": "...", "ClientSecret": "..." },
+    "Microsoft": { "ClientId": "...", "ClientSecret": "..." },
+    "GitHub": { "ClientId": "...", "ClientSecret": "..." }
   }
 }
 ```
 
-Les providers ne sont activés que si leur `ClientId` est présent et non vide.
+---
+
+## 10. JWKS & Token Validation
+
+JWKS (JSON Web Key Set) is an OIDC standard that exposes public keys for JWT signature verification.
+
+**Endpoints:**
+
+- `/.well-known/openid-configuration` — OIDC metadata
+- `/.well-known/jwks` — Public RSA keys
+
+**Advantages:**
+
+- No need to share a secret key between services
+- Key rotation possible without downtime
+- Industry standard (OpenID Connect)
+
+**Development mode:** OpenIddict uses ephemeral keys (change on every restart). For persistent keys, configure `AddSigningKey()` with a certificate in production.
 
 ---
 
-## 8. JWKS — JSON Web Key Set
+## 11. Test Credentials
 
-JWKS est un standard qui expose les clés publiques servant à vérifier la signature des JWT.
+| Role         | Email                   | Password                    |
+| ------------ | ----------------------- | --------------------------- |
+| Super Admin  | `admin@dotnetniger.com` | `Admin@123456`              |
+| Regular User | _(register via API)_    | _(set during registration)_ |
 
-**DotnetNiger.Identity expose automatiquement** :
-- `/.well-known/openid-configuration` : métadonnées OIDC
-- `/.well-known/jwks` : clés publiques RSA
-
-**Avantages JWKS** :
-- ✅ Pas besoin de partager une clé secrète
-- ✅ Rotation de clés possible sans downtime
-- ✅ Standard OpenID Connect
-
-**En développement**, OpenIddict utilise des clés éphémères (change à chaque redémarrage). Pour une rotation persistante, configurez `AddSigningKey()` avec un certificat.
-
----
-
-## 9. Tests
-
-Compte admin plateforme :
-- **Email :** `admin@dotnetniger.com`
-- **Mot de passe :** `Admin@123456`
-- **Rôle :** Admin
-
----
-
-## 10. Swagger
-
-L'interface Swagger est disponible en développement à :
-```
-http://localhost:5075/swagger
-```
+The super admin is created automatically by the database seeder on first run.

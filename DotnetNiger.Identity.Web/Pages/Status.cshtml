@@ -1,0 +1,38 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.StatusModel
+@{
+    ViewData["Title"] = "Statut des services";
+}
+<div class="container py-5" style="max-width:800px;">
+    <h1 class="fw-bold mb-2">Statut des services</h1>
+    <p class="text-muted mb-5">État en temps réel des services DotnetNiger.</p>
+
+    @foreach (var svc in Model.Services)
+    {
+        var icon = svc.IsHealthy == true ? "bi-check-circle-fill text-success" :
+                   svc.IsHealthy == false ? "bi-x-circle-fill text-danger" :
+                   "bi-question-circle-fill text-secondary";
+        var badge = svc.IsHealthy == true ? "bg-success" :
+                    svc.IsHealthy == false ? "bg-danger" :
+                    "bg-secondary";
+        var label = svc.IsHealthy == true ? "Opérationnel" :
+                    svc.IsHealthy == false ? "Indisponible" :
+                    "Non vérifié";
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body d-flex align-items-center gap-3">
+                <i class="bi @icon fs-3"></i>
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold mb-0">@svc.Name</h6>
+                    <small class="text-muted">@svc.Detail</small>
+                </div>
+                <span class="badge @badge rounded-pill">@label</span>
+            </div>
+        </div>
+    }
+
+    <div class="mt-5 text-muted small">
+        <p>Dernière vérification : @Model.LastCheckTime · @Model.Services.Count(s => s.IsHealthy == true)/@Model.Services.Count services opérationnels.</p>
+        <p>En cas d'incident, contactez <a href="mailto:support@dotnetniger.com">support@dotnetniger.com</a>.</p>
+    </div>
+</div>

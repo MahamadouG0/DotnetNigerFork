@@ -1,0 +1,1472 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.Developer.DocsModel
+@{
+    ViewData["Title"] = "Documentation";
+    // Layout géré par _ViewStart.cshtml
+}
+
+<style>
+pre { position: relative; }
+pre code { font-size: 0.82rem; line-height: 1.6; display: block; overflow-x: auto; }
+.copy-btn {
+    position: absolute; top: 4px; right: 4px; z-index: 10;
+    opacity: 0; transition: opacity 0.2s; font-size: 0.75rem;
+    padding: 2px 8px; cursor: pointer;
+}
+pre:hover .copy-btn { opacity: 1; }
+.tab-content { min-height: 300px; }
+.nav-tabs .nav-link { font-size: 0.9rem; }
+.error-code { font-family: monospace; font-weight: bold; }
+</style>
+
+<div class="container py-5" style="max-width:1100px;">
+    <h1>Documentation d'intégration</h1>
+    <p class="lead">Exemples d'intégration multi-langage pour la plateforme DotnetNiger.</p>
+
+    <div class="mb-3">
+        <div class="btn-group" role="group">
+            <a href="?lang=fr" class="btn btn-outline-primary @(Model.Lang == "fr" ? "active" : "")">🇫🇷 Français</a>
+            <a href="?lang=en" class="btn btn-outline-primary @(Model.Lang == "en" ? "active" : "")">🇬🇧 English</a>
+        </div>
+    </div>
+
+    @if (Model.Lang == "fr")
+    {
+        <ul class="nav nav-tabs nav-justified mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="fr-register-tab" data-bs-toggle="tab" data-bs-target="#fr-register" type="button" role="tab"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/><path d="M5 6.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/></svg> Enregistrement</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="fr-gateway-tab" data-bs-toggle="tab" data-bs-target="#fr-gateway" type="button" role="tab"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM2.04 4.81A6.503 6.503 0 0 1 7 1.18v.7c0 .6-.4 1.1-.9 1.4l-.5.3c-.5.3-.6.9-.3 1.3l.3.4c.2.3.3.7.1 1.1l-.4.7c-.2.3-.5.5-.9.5h-.3c-.6 0-1.1.5-1.1 1.1v.7c0 .6-.5 1.1-1.1 1.1-.2 0-.3 0-.5-.1l-.5-.3a6.44 6.44 0 0 1-1.32-3.97zm7.85 8.55A6.48 6.48 0 0 1 8 14.82v-.9c0-.7.4-1.3.9-1.7l.2-.1c.5-.3.9-.9.7-1.5l-.3-.8c-.1-.3 0-.6.1-.8l1-1.2c.3-.3.7-.5 1.1-.5h.7c.4 0 .8-.1 1.1-.3l.1-.1c.5.9.8 2.1.6 3.3a6.51 6.51 0 0 1-3.8 3.68z"/></svg> Gateway</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="fr-frameworks-tab" data-bs-toggle="tab" data-bs-target="#fr-frameworks" type="button" role="tab"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg> Frameworks</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="fr-errors-tab" data-bs-toggle="tab" data-bs-target="#fr-errors" type="button" role="tab"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg> Erreurs</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="fr-prod-tab" data-bs-toggle="tab" data-bs-target="#fr-prod" type="button" role="tab"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M5.338 1.59a61.44 61.44 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.725 10.725 0 0 0 2.287 2.233c.346.244.652.42.893.533.12.057.218.095.293.118a.55.55 0 0 0 .101.025.615.615 0 0 0 .1-.025c.076-.023.174-.061.294-.118.24-.113.547-.29.893-.533a10.726 10.726 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1c-.53.067-1.552.29-2.662.59z"/></svg> Production</button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            @* ──── Tab 1: Enregistrement ──── *@
+            <div class="tab-pane fade show active" id="fr-register" role="tabpanel">
+
+            @* ──── Carte : Health Monitoring ──── *@
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg> Health Monitoring</h5></div>
+                <div class="card-body">
+                    <p>Le Gateway vérifie périodiquement la santé de vos services externes (toutes les 30 secondes).</p>
+                    <p>Si un service ne répond pas 3 fois de suite, son statut passe à <strong>Suspended</strong>.</p>
+                    <p>Consultez l'état de santé depuis le tableau de bord : <code>/Developer/Services</code> — l'indicateur ✅ vert signifie service OK, ❌ rouge indique des échecs.</p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/><path d="M5 6.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/></svg> Enregistrer un service externe</h5></div>
+                <div class="card-body">
+                    <p>Enregistrez votre API externe pour la rendre accessible via le Gateway.</p>
+                    <pre class="bg-light p-3 rounded"><code>POST /api/v1/external-services/register
+Headers: X-API-Key: dn_votre_cle
+Body: {
+  "name": "Mon Service",
+  "slug": "mon-service",
+  "baseUrl": "https://api.monservice.com",
+  "description": "...",
+  "healthEndpoint": "/health"
+}</code></pre>
+
+                    <h6 class="mt-3">cURL</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X POST http://localhost:5075/api/v1/external-services/register \
+  -H "X-API-Key: dn_votre_cle" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Mon Service",
+    "slug": "mon-service",
+    "baseUrl": "https://api.monservice.com"
+  }'</code></pre>
+
+                    <h6 class="mt-3">Python</h6>
+                    <pre class="bg-light p-3 rounded"><code>import requests
+
+url = "http://localhost:5075/api/v1/external-services/register"
+headers = {"X-API-Key": "dn_votre_cle"}
+data = {
+    "name": "Mon Service",
+    "slug": "mon-service",
+    "baseUrl": "https://api.monservice.com"
+}
+response = requests.post(url, json=data, headers=headers)
+print(response.json())</code></pre>
+
+                    <h6 class="mt-3">Node.js</h6>
+                    <pre class="bg-light p-3 rounded"><code>const axios = require('axios');
+
+const response = await axios.post(
+  'http://localhost:5075/api/v1/external-services/register',
+  {
+    name: 'Mon Service',
+    slug: 'mon-service',
+    baseUrl: 'https://api.monservice.com'
+  },
+  {
+    headers: { 'X-API-Key': 'dn_votre_cle' }
+  }
+);
+console.log(response.data);</code></pre>
+
+                    <h6 class="mt-3">C#</h6>
+                    <pre class="bg-light p-3 rounded"><code>using var client = new HttpClient();
+client.DefaultRequestHeaders.Add("X-API-Key", "dn_votre_cle");
+
+var payload = new {
+    name = "Mon Service",
+    slug = "mon-service",
+    baseUrl = "https://api.monservice.com"
+};
+
+var response = await client.PostAsJsonAsync(
+    "http://localhost:5075/api/v1/external-services/register", payload);
+var result = await response.Content.ReadFromJsonAsync&lt;ExternalServiceResponse&gt;();</code></pre>
+
+                    <h6 class="mt-3">Java</h6>
+                    <pre class="bg-light p-3 rounded"><code>OkHttpClient client = new OkHttpClient();
+
+MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+String json = "{"
+    + "\"name\":\"Mon Service\","
+    + "\"slug\":\"mon-service\","
+    + "\"baseUrl\":\"https://api.monservice.com\""
+    + "}";
+
+Request request = new Request.Builder()
+    .url("http://localhost:5075/api/v1/external-services/register")
+    .addHeader("X-API-Key", "dn_votre_cle")
+    .post(RequestBody.create(json, JSON))
+    .build();
+
+Response response = client.newCall(request).execute();</code></pre>
+
+                    <h6 class="mt-3">Go</h6>
+                    <pre class="bg-light p-3 rounded"><code>package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "net/http"
+)
+
+func main() {
+    payload := map[string]string{
+        "name":    "Mon Service",
+        "slug":    "mon-service",
+        "baseUrl": "https://api.monservice.com",
+    }
+    body, _ := json.Marshal(payload)
+
+    req, _ := http.NewRequest("POST",
+        "http://localhost:5075/api/v1/external-services/register",
+        bytes.NewBuffer(body))
+    req.Header.Set("X-API-Key", "dn_votre_cle")
+    req.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{}
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+}</code></pre>
+
+                    <h6 class="mt-3">Rust</h6>
+                    <pre class="bg-light p-3 rounded"><code>use reqwest;
+use serde_json::json;
+
+#[tokio::main]
+async fn main() {
+    let client = reqwest::Client::new();
+    let response = client
+        .post("http://localhost:5075/api/v1/external-services/register")
+        .header("X-API-Key", "dn_votre_cle")
+        .json(&json!({
+            "name": "Mon Service",
+            "slug": "mon-service",
+            "baseUrl": "https://api.monservice.com"
+        }))
+        .send()
+        .await
+        .unwrap();
+    println!("{:?}", response.text().await.unwrap());
+}</code></pre>
+
+                    <h6 class="mt-3">PHP</h6>
+                    <pre class="bg-light p-3 rounded"><code>$ch = curl_init("http://localhost:5075/api/v1/external-services/register");
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "X-API-Key: dn_votre_cle",
+    "Content-Type: application/json"
+]);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+    "name" => "Mon Service",
+    "slug" => "mon-service",
+    "baseUrl" => "https://api.monservice.com"
+]));
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+$response = curl_exec($ch);
+curl_close($ch);</code></pre>
+
+                    <h6 class="mt-3">Ruby</h6>
+                    <pre class="bg-light p-3 rounded"><code>require 'net/http'
+require 'json'
+require 'uri'
+
+uri = URI("http://localhost:5075/api/v1/external-services/register")
+http = Net::HTTP.new(uri.host, uri.port)
+
+request = Net::HTTP::Post.new(uri)
+request["X-API-Key"] = "dn_votre_cle"
+request["Content-Type"] = "application/json"
+request.body = {
+  name: "Mon Service",
+  slug: "mon-service",
+  baseUrl: "https://api.monservice.com"
+}.to_json
+
+response = http.request(request)
+puts response.body</code></pre>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M1 2.828c.885-.37 2.154-.769 4-.9V13.5c-1.842.115-3.114.51-4 .9V2.828zM5 .5c1.84-.13 3.366-.065 5 .065V12.9c-1.634-.13-3.16-.195-5-.065V.5zM15 2.828v10.472c-.815-.345-1.983-.668-3-.747V1.97c1.148.059 2.31.36 3 .858zM10 1.23c1.16-.13 2.322-.208 3-.166V12.9c-.678.042-1.84.036-3-.166V1.23z"/></svg> Obtenir un token OIDC</h5></div>
+                <div class="card-body">
+                    <p>Flux <strong>password</strong> (pour vos propres applications back-end) :</p>
+                    <pre class="bg-light p-3 rounded"><code>curl -X POST @Model.IdentityUrl/connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "username=user@example.com" \
+  -d "password=MotDePasse123" \
+  -d "scope=openid profile email roles offline_access"</code></pre>
+
+                    <p class="mt-3">Flux <strong>client_credentials</strong> (pour les APIs) :</p>
+                    <pre class="bg-light p-3 rounded"><code>curl -X POST @Model.IdentityUrl/connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=votre_client_id" \
+  -d "client_secret=votre_client_secret" \
+  -d "scope=api"</code></pre>
+                </div>
+            </div>
+
+            @* ──── Carte : Gérer vos clés API ──── *@
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg> Gérer vos clés API</h5></div>
+                <div class="card-body">
+                    <p>Créez, listez, faites rotate et supprimez vos clés API depuis le tableau de bord ou via l'API.</p>
+
+                    <h6 class="mt-3">cURL — Lister les clés</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X GET http://localhost:5075/api/v1/admin/tenants/{tenantId}/api-keys \
+  -H "Authorization: Bearer {token}"</code></pre>
+
+                    <h6 class="mt-3">cURL — Créer une clé</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X POST http://localhost:5075/api/v1/admin/tenants/{tenantId}/api-keys \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Ma clé de prod", "scopes": ["api"]}'</code></pre>
+
+                    <h6 class="mt-3">cURL — Faire rotate (régénérer) une clé</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X POST http://localhost:5075/api/v1/admin/tenants/{tenantId}/api-keys/{keyId}/rotate \
+  -H "Authorization: Bearer {token}"</code></pre>
+
+                    <h6 class="mt-3">cURL — Supprimer une clé</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X DELETE http://localhost:5075/api/v1/admin/tenants/{tenantId}/api-keys/{keyId} \
+  -H "Authorization: Bearer {token}"</code></pre>
+                </div>
+            </div>
+
+            @* ──── Carte : Modifier un service (PATCH) ──── *@
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10z"/></svg> Modifier un service (PATCH)</h5></div>
+                <div class="card-body">
+                    <p>Mettez à jour l'URL, la description ou l'endpoint santé d'un service enregistré.</p>
+
+                    <h6 class="mt-3">cURL</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X PATCH http://localhost:5075/api/v1/external-services/{serviceId} \
+  -H "X-API-Key: dn_ma_cle" \
+  -H "Content-Type: application/json" \
+  -d '{"baseUrl": "https://nouvelle-url.com", "description": "Mise à jour"}'</code></pre>
+
+                    <h6 class="mt-3">Python</h6>
+                    <pre class="bg-light p-3 rounded"><code>import requests
+response = requests.patch(
+    "http://localhost:5075/api/v1/external-services/{id}",
+    json={"baseUrl": "https://nouvelle-url.com"},
+    headers={"X-API-Key": "dn_ma_cle"}
+)
+print(response.json())</code></pre>
+                </div>
+            </div>
+        </div>
+
+        @* ──── Onglet 2 : Gateway ──── *@
+        <div class="tab-pane fade" id="fr-gateway" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM2.04 4.81A6.503 6.503 0 0 1 7 1.18v.7c0 .6-.4 1.1-.9 1.4l-.5.3c-.5.3-.6.9-.3 1.3l.3.4c.2.3.3.7.1 1.1l-.4.7c-.2.3-.5.5-.9.5h-.3c-.6 0-1.1.5-1.1 1.1v.7c0 .6-.5 1.1-1.1 1.1-.2 0-.3 0-.5-.1l-.5-.3a6.44 6.44 0 0 1-1.32-3.97zm7.85 8.55A6.48 6.48 0 0 1 8 14.82v-.9c0-.7.4-1.3.9-1.7l.2-.1c.5-.3.9-.9.7-1.5l-.3-.8c-.1-.3 0-.6.1-.8l1-1.2c.3-.3.7-.5 1.1-.5h.7c.4 0 .8-.1 1.1-.3l.1-.1c.5.9.8 2.1.6 3.3a6.51 6.51 0 0 1-3.8 3.68z"/></svg> Gateway — Accès aux services externes</h5></div>
+                <div class="card-body">
+                    <p>Une fois votre service enregistré, appelez-le via le Gateway avec votre <strong>clé API</strong> ou un <strong>token JWT</strong> :</p>
+
+                    <h6 class="mt-3">cURL</h6>
+                    <pre class="bg-light p-3 rounded"><code># Avec clé API
+curl -X GET @Model.GatewayUrl/ext/mon-service/health \
+  -H "X-API-Key: dn_ma_cle"
+
+# Avec token JWT (récupéré via /connect/token)
+curl -X GET @Model.GatewayUrl/ext/mon-service/api/ressources \
+  -H "Authorization: Bearer eyJ..."</code></pre>
+
+                    <h6 class="mt-3">Python</h6>
+                    <pre class="bg-light p-3 rounded"><code>import requests
+
+GATEWAY = "@Model.GatewayUrl"
+API_KEY = "dn_ma_cle"
+TOKEN = "eyJ..."  # depuis /connect/token
+
+# Avec clé API
+r = requests.get(f"{GATEWAY}/ext/mon-service/health",
+    headers={"X-API-Key": API_KEY})
+
+# Avec JWT
+r = requests.get(f"{GATEWAY}/ext/mon-service/api/users",
+    headers={"Authorization": f"Bearer {TOKEN}"})</code></pre>
+
+                    <h6 class="mt-3">Node.js (axios)</h6>
+                    <pre class="bg-light p-3 rounded"><code>const axios = require('axios');
+const GATEWAY = "@Model.GatewayUrl";
+const API_KEY = "dn_ma_cle";
+const TOKEN = "eyJ...";
+
+// Avec clé API
+await axios.get(`${GATEWAY}/ext/mon-service/health`,
+    { headers: { 'X-API-Key': API_KEY } });
+
+// Avec JWT
+await axios.get(`${GATEWAY}/ext/mon-service/api/users`,
+    { headers: { Authorization: `Bearer ${TOKEN}` } });</code></pre>
+
+                    <h6 class="mt-3">C# (HttpClient)</h6>
+                    <pre class="bg-light p-3 rounded"><code>using var client = new HttpClient();
+client.BaseAddress = new Uri("@Model.GatewayUrl");
+
+// Avec clé API
+client.DefaultRequestHeaders.Add("X-API-Key", "dn_ma_cle");
+var resp1 = await client.GetAsync("/ext/mon-service/health");
+
+// Avec JWT
+client.DefaultRequestHeaders.Authorization =
+    new AuthenticationHeaderValue("Bearer", token);
+var resp2 = await client.GetAsync("/ext/mon-service/api/users");</code></pre>
+
+                    <h6 class="mt-3">Java (OkHttp)</h6>
+                    <pre class="bg-light p-3 rounded"><code>OkHttpClient client = new OkHttpClient();
+
+// Avec clé API
+Request req1 = new Request.Builder()
+    .url("@Model.GatewayUrl/ext/mon-service/health")
+    .addHeader("X-API-Key", "dn_ma_cle")
+    .build();
+Response r1 = client.newCall(req1).execute();
+
+// Avec JWT
+Request req2 = new Request.Builder()
+    .url("@Model.GatewayUrl/ext/mon-service/api/users")
+    .addHeader("Authorization", "Bearer eyJ...")
+    .build();
+Response r2 = client.newCall(req2).execute();</code></pre>
+
+                    <h6 class="mt-3">Go</h6>
+                    <pre class="bg-light p-3 rounded"><code>package main
+
+import (
+    "net/http"
+    "fmt"
+)
+
+func main() {
+    gateway := "@Model.GatewayUrl"
+    apiKey := "dn_ma_cle"
+    token := "eyJ..."
+
+    // Avec clé API
+    req1, _ := http.NewRequest("GET", gateway + "/ext/mon-service/health", nil)
+    req1.Header.Set("X-API-Key", apiKey)
+
+    // Avec JWT
+    req2, _ := http.NewRequest("GET", gateway + "/ext/mon-service/api/users", nil)
+    req2.Header.Set("Authorization", "Bearer " + token)
+
+    client := &http.Client{}
+    client.Do(req1)
+    client.Do(req2)
+}</code></pre>
+
+                    <h6 class="mt-3">Rust</h6>
+                    <pre class="bg-light p-3 rounded"><code>use reqwest;
+
+#[tokio::main]
+async fn main() {
+    let client = reqwest::Client::new();
+    let gateway = "@Model.GatewayUrl";
+
+    // Avec clé API
+    let r1 = client.get(format!("{}/ext/mon-service/health", gateway))
+        .header("X-API-Key", "dn_ma_cle")
+        .send().await;
+
+    // Avec JWT
+    let r2 = client.get(format!("{}/ext/mon-service/api/users", gateway))
+        .bearer_auth("eyJ...")
+        .send().await;
+}</code></pre>
+
+                    <h6 class="mt-3">PHP</h6>
+                    <pre class="bg-light p-3 rounded"><code>$gateway = "@Model.GatewayUrl";
+
+// Avec clé API
+$ch1 = curl_init("$gateway/ext/mon-service/health");
+curl_setopt($ch1, CURLOPT_HTTPHEADER, ["X-API-Key: dn_ma_cle"]);
+curl_exec($ch1);
+
+// Avec JWT
+$ch2 = curl_init("$gateway/ext/mon-service/api/users");
+curl_setopt($ch2, CURLOPT_HTTPHEADER, ["Authorization: Bearer eyJ..."]);
+curl_exec($ch2);</code></pre>
+
+                    <h6 class="mt-3">Ruby</h6>
+                    <pre class="bg-light p-3 rounded"><code>require 'net/http'
+require 'uri'
+
+gateway = "@Model.GatewayUrl"
+
+# Avec clé API
+uri1 = URI("#{gateway}/ext/mon-service/health")
+req1 = Net::HTTP::Get.new(uri1)
+req1["X-API-Key"] = "dn_ma_cle"
+Net::HTTP.start(uri1.host, uri1.port) { |http| http.request(req1) }
+
+# Avec JWT
+uri2 = URI("#{gateway}/ext/mon-service/api/users")
+req2 = Net::HTTP::Get.new(uri2)
+req2["Authorization"] = "Bearer eyJ..."
+Net::HTTP.start(uri2.host, uri2.port) { |http| http.request(req2) }</code></pre>
+                </div>
+            </div>
+        </div>
+
+        @* ──── Onglet 3 : Frameworks ──── *@
+        <div class="tab-pane fade" id="fr-frameworks" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg> Exemples avec frameworks</h5></div>
+                <div class="card-body">
+                    <p>Configurez votre framework pour appeler le Gateway de manière réutilisable.</p>
+
+                    <h6 class="mt-3">Express.js (Node.js)</h6>
+                    <pre class="bg-light p-3 rounded"><code>const axios = require('axios');
+
+const gatewayClient = (apiKey) => {
+  const client = axios.create({
+    baseURL: '@Model.GatewayUrl',
+    headers: { 'X-API-Key': apiKey }
+  });
+  return client;
+};
+
+const client = gatewayClient('dn_ma_cle');
+const health = await client.get('/ext/mon-service/health');
+const users = await client.get('/ext/mon-service/api/users');</code></pre>
+
+                    <h6 class="mt-3">Spring Boot (Java)</h6>
+                    <pre class="bg-light p-3 rounded"><code>@@Configuration
+public class GatewayConfig {
+
+    @@Bean
+    public RestTemplate gatewayRestTemplate() {
+        return new RestTemplate();
+    }
+
+    public HttpHeaders authHeaders(String apiKey) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-API-Key", apiKey);
+        return headers;
+    }
+}
+
+@@Service
+public class MonService {
+    public String appeler() {
+        RestTemplate rt = new RestTemplate();
+        HttpEntity&lt;Void&gt; entity = new HttpEntity&lt;&gt;(authHeaders("dn_ma_cle"));
+        ResponseEntity&lt;String&gt; r = rt.exchange(
+            "@Model.GatewayUrl/ext/mon-service/health",
+            HttpMethod.GET, entity, String.class);
+        return r.getBody();
+    }
+}</code></pre>
+
+                    <h6 class="mt-3">FastAPI (Python)</h6>
+                    <pre class="bg-light p-3 rounded"><code>from fastapi import FastAPI, HTTPException
+import httpx
+
+GATEWAY = "@Model.GatewayUrl"
+API_KEY = "dn_ma_cle"
+
+app = FastAPI()
+
+async def call_gateway(slug: str, path: str):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            f"{GATEWAY}/ext/{slug}/{path}",
+            headers={"X-API-Key": API_KEY}
+        )
+        if r.status_code != 200:
+            raise HTTPException(r.status_code, r.text)
+        return r.json()
+
+@@app.get("/api/mon-sante")
+async def sante():
+    return await call_gateway("mon-service", "health")</code></pre>
+
+                    <h6 class="mt-3">ASP.NET Core (C#)</h6>
+                    <pre class="bg-light p-3 rounded"><code>// Program.cs
+builder.Services.AddHttpClient("Gateway", client => {
+    client.BaseAddress = new Uri("@Model.GatewayUrl");
+    client.DefaultRequestHeaders.Add("X-API-Key", "dn_ma_cle");
+});
+
+public class MonService
+{
+    private readonly IHttpClientFactory _http;
+
+    public MonService(IHttpClientFactory http) => _http = http;
+
+    public async Task&lt;string&gt; GetHealthAsync()
+    {
+        var client = _http.CreateClient("Gateway");
+        return await client.GetStringAsync("/ext/mon-service/health");
+    }
+}</code></pre>
+
+                    <h6 class="mt-3">Gin (Go)</h6>
+                    <pre class="bg-light p-3 rounded"><code>package main
+
+import (
+    "net/http"
+    "io/ioutil"
+    "fmt"
+)
+
+type GatewayClient struct {
+    BaseURL string
+    APIKey  string
+    client  *http.Client
+}
+
+func NewGatewayClient(baseURL, apiKey string) *GatewayClient {
+    return &GatewayClient{BaseURL: baseURL, APIKey: apiKey, client: &http.Client{}}
+}
+
+func (g *GatewayClient) Get(path string) (string, error) {
+    req, _ := http.NewRequest("GET", g.BaseURL + path, nil)
+    req.Header.Set("X-API-Key", g.APIKey)
+    resp, err := g.client.Do(req)
+    if err != nil { return "", err }
+    defer resp.Body.Close()
+    body, _ := ioutil.ReadAll(resp.Body)
+    return string(body), nil
+}
+
+func main() {
+    gw := NewGatewayClient("@Model.GatewayUrl", "dn_ma_cle")
+    health, _ := gw.Get("/ext/mon-service/health")
+    fmt.Println(health)
+}</code></pre>
+
+                    <h6 class="mt-3">Ruby on Rails</h6>
+                    <pre class="bg-light p-3 rounded"><code># config/initializers/gateway.rb
+require 'net/http'
+
+module Gateway
+  BASE = '@Model.GatewayUrl'
+  API_KEY = 'dn_ma_cle'
+
+  def self.get(path)
+    uri = URI("#{BASE}#{path}")
+    req = Net::HTTP::Get.new(uri)
+    req['X-API-Key'] = API_KEY
+    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+      http.request(req)
+    end
+  end
+end
+
+class MonController &lt; ApplicationController
+  def sante
+    response = Gateway.get('/ext/mon-service/health')
+    render json: response.body
+  end
+end</code></pre>
+
+                    <h6 class="mt-3">Laravel (PHP)</h6>
+                    <pre class="bg-light p-3 rounded"><code>use Illuminate\Support\Facades\Http;
+
+'gateway' => [
+    'base_url' => '@Model.GatewayUrl',
+    'api_key' => env('GATEWAY_API_KEY', 'dn_ma_cle'),
+],
+
+class MonService
+{
+    public function sante()
+    {
+        return Http::withHeaders([
+            'X-API-Key' => config('services.gateway.api_key'),
+        ])->get(config('services.gateway.base_url') . '/ext/mon-service/health')->json();
+    }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        @* ──── Onglet 4 : Gestion d'erreurs ──── *@
+        <div class="tab-pane fade" id="fr-errors" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg> Gestion des erreurs</h5></div>
+                <div class="card-body">
+                    <p>Code d'erreur retournés par le Gateway et l'API Identity :</p>
+
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Code</th>
+                                <th>Cause</th>
+                                <th>Solution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="error-code">401</span></td>
+                                <td>Clé API manquante ou invalide</td>
+                                <td>Vérifiez l'en-tête <code>X-API-Key</code>. Générez une nouvelle clé depuis le tableau de bord.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="error-code">403</span></td>
+                                <td>Token JWT expiré ou invalide</td>
+                                <td>Récupérez un nouveau token via <code>/connect/token</code>. Vérifiez les scopes demandés.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="error-code">404</span></td>
+                                <td>Slug du service introuvable</td>
+                                <td>Vérifiez que le service est enregistré et actif. <code>GET /api/v1/external-services</code> pour lister.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="error-code">429</span></td>
+                                <td>Trop de requêtes (rate limiting)</td>
+                                <td>Attendez 60 secondes avant de réessayer. Contactez-nous pour augmenter la limite.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="error-code">502</span></td>
+                                <td>Service externe injoignable</td>
+                                <td>Vérifiez que votre service est actif. Le Gateway abandonne après 30 secondes de timeout.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="error-code">504</span></td>
+                                <td>Timeout du service externe</td>
+                                <td>Le service distant a mis trop de temps à répondre. Optimisez le temps de réponse.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h6 class="mt-4">Exemple : intercepter les erreurs en Python</h6>
+                    <pre class="bg-light p-3 rounded"><code>import requests
+
+GATEWAY = "@Model.GatewayUrl"
+API_KEY = "dn_ma_cle"
+
+def call_service(path):
+    r = requests.get(
+        f"{GATEWAY}/ext/mon-service/{path}",
+        headers={"X-API-Key": API_KEY}
+    )
+    if r.status_code == 401:
+        print("Clé API invalide — vérifiez votre clé")
+    elif r.status_code == 404:
+        print("Service introuvable — vérifiez le slug")
+    elif r.status_code == 502:
+        print("Service distant indisponible — réessayez plus tard")
+    elif r.status_code != 200:
+        print(f"Erreur {r.status_code}: {r.text}")
+    else:
+        return r.json()</code></pre>
+                </div>
+            </div>
+        </div>
+
+        @* ──── Onglet 5 : Production ──── *@
+        <div class="tab-pane fade" id="fr-prod" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M5.338 1.59a61.44 61.44 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.725 10.725 0 0 0 2.287 2.233c.346.244.652.42.893.533.12.057.218.095.293.118a.55.55 0 0 0 .101.025.615.615 0 0 0 .1-.025c.076-.023.174-.061.294-.118.24-.113.547-.29.893-.533a10.726 10.726 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1c-.53.067-1.552.29-2.662.59z"/></svg> Mise en production</h5></div>
+                <div class="card-body">
+                    <p>En production, remplacez les URLs locales par le domaine de votre Gateway et votre Identity :</p>
+
+                    <pre class="bg-light p-3 rounded"><code># Au lieu de localhost:5075 (Identity) et localhost:5000 (Gateway)
+IDENTITY_URL=https://auth.dotnetniger.com
+GATEWAY_URL=https://gateway.dotnetniger.com</code></pre>
+
+                    <p class="mt-3">Configurez ces URLs dans <code>appsettings.json</code> via des variables d'environnement :</p>
+
+                    <pre class="bg-light p-3 rounded"><code># Exemple de fichier .env pour Docker / serveur
+DeveloperPortal__GatewayBaseUrl=https://gateway.dotnetniger.com
+Identity__BaseUrl=https://auth.dotnetniger.com
+
+# Pour les appels API, utilisez toujours le domaine de production :
+curl -X GET https://gateway.dotnetniger.com/ext/mon-service/health \
+  -H "X-API-Key: dn_ma_cle_prod"</code></pre>
+
+                    <h6 class="mt-3">Recommandations</h6>
+                    <ul>
+                        <li><strong>HTTPS</strong> — Activez TLS sur le Gateway et l'Identity. Utilisez <code>RequireHttpsMetadata = true</code></li>
+                        <li><strong>Clés API</strong> — Générez des clés de production distinctes. Ne réutilisez jamais les clés de développement</li>
+                        <li><strong>Rate limiting</strong> — Adaptez les limites via <code>RateLimiting:PermitLimit</code> et <code>RateLimiting:WindowSeconds</code></li>
+                        <li><strong>Certificats OIDC</strong> — En production, utilisez des certificats réels (via <code>OpenIddict:CertificatePath</code>) au lieu des clés éphémères de dev</li>
+                        <li><strong>Logs</strong> — Surveillez les erreurs Gateway via les fichiers <code>logs/gateway-*.log</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+}
+else
+{
+    @* ════════════════════════════════════════════ ENGLISH ════════════════════════════════════════════ *@
+    <ul class="nav nav-tabs nav-justified mb-4" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="en-register-tab" data-bs-toggle="tab" data-bs-target="#en-register" type="button" role="tab"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/><path d="M5 6.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/></svg> Registration</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="en-gateway-tab" data-bs-toggle="tab" data-bs-target="#en-gateway" type="button" role="tab"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM2.04 4.81A6.503 6.503 0 0 1 7 1.18v.7c0 .6-.4 1.1-.9 1.4l-.5.3c-.5.3-.6.9-.3 1.3l.3.4c.2.3.3.7.1 1.1l-.4.7c-.2.3-.5.5-.9.5h-.3c-.6 0-1.1.5-1.1 1.1v.7c0 .6-.5 1.1-1.1 1.1-.2 0-.3 0-.5-.1l-.5-.3a6.44 6.44 0 0 1-1.32-3.97zm7.85 8.55A6.48 6.48 0 0 1 8 14.82v-.9c0-.7.4-1.3.9-1.7l.2-.1c.5-.3.9-.9.7-1.5l-.3-.8c-.1-.3 0-.6.1-.8l1-1.2c.3-.3.7-.5 1.1-.5h.7c.4 0 .8-.1 1.1-.3l.1-.1c.5.9.8 2.1.6 3.3a6.51 6.51 0 0 1-3.8 3.68z"/></svg> Gateway</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="en-frameworks-tab" data-bs-toggle="tab" data-bs-target="#en-frameworks" type="button" role="tab"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg> Frameworks</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="en-errors-tab" data-bs-toggle="tab" data-bs-target="#en-errors" type="button" role="tab"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg> Errors</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="en-prod-tab" data-bs-toggle="tab" data-bs-target="#en-prod" type="button" role="tab"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M5.338 1.59a61.44 61.44 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.725 10.725 0 0 0 2.287 2.233c.346.244.652.42.893.533.12.057.218.095.293.118a.55.55 0 0 0 .101.025.615.615 0 0 0 .1-.025c.076-.023.174-.061.294-.118.24-.113.547-.29.893-.533a10.726 10.726 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1c-.53.067-1.552.29-2.662.59z"/></svg> Production</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+        @* ──── Tab 1: Registration ──── *@
+        <div class="tab-pane fade show active" id="en-register" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg> Authentication</h5></div>
+                <div class="card-body">
+                    <p>To use the DotnetNiger API, include your API key in the <code>X-API-Key</code> header.</p>
+                    <p>Get your key from the developer dashboard or by creating a tenant.</p>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/><path d="M5 6.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/></svg> Register an External Service</h5></div>
+                <div class="card-body">
+                    <p>Register your external API to make it accessible through the Gateway.</p>
+
+                    <h6 class="mt-3">cURL</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X POST http://localhost:5075/api/v1/external-services/register \
+  -H "X-API-Key: dn_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Service",
+    "slug": "my-service",
+    "baseUrl": "https://api.myservice.com"
+  }'</code></pre>
+
+                    <h6 class="mt-3">Python</h6>
+                    <pre class="bg-light p-3 rounded"><code>import requests
+
+response = requests.post(
+    "http://localhost:5075/api/v1/external-services/register",
+    json={
+        "name": "My Service",
+        "slug": "my-service",
+        "baseUrl": "https://api.myservice.com"
+    },
+    headers={"X-API-Key": "dn_your_key"}
+)
+print(response.json())</code></pre>
+
+                    <h6 class="mt-3">Node.js</h6>
+                    <pre class="bg-light p-3 rounded"><code>const response = await axios.post(
+  'http://localhost:5075/api/v1/external-services/register',
+  {
+    name: 'My Service',
+    slug: 'my-service',
+    baseUrl: 'https://api.myservice.com'
+  },
+  { headers: { 'X-API-Key': 'dn_your_key' } }
+);
+console.log(response.data);</code></pre>
+
+                    <h6 class="mt-3">C#</h6>
+                    <pre class="bg-light p-3 rounded"><code>using var client = new HttpClient();
+client.DefaultRequestHeaders.Add("X-API-Key", "dn_your_key");
+
+var payload = new {
+    name = "My Service",
+    slug = "my-service",
+    baseUrl = "https://api.myservice.com"
+};
+
+var response = await client.PostAsJsonAsync(
+    "http://localhost:5075/api/v1/external-services/register", payload);
+var result = await response.Content.ReadFromJsonAsync&lt;ExternalServiceResponse&gt;();</code></pre>
+
+                    <h6 class="mt-3">Java</h6>
+                    <pre class="bg-light p-3 rounded"><code>OkHttpClient client = new OkHttpClient();
+
+String json = "{"
+    + "\"name\":\"My Service\","
+    + "\"slug\":\"my-service\","
+    + "\"baseUrl\":\"https://api.myservice.com\""
+    + "}";
+
+Request request = new Request.Builder()
+    .url("http://localhost:5075/api/v1/external-services/register")
+    .addHeader("X-API-Key", "dn_your_key")
+    .post(RequestBody.create(json, MediaType.parse("application/json")))
+    .build();
+
+Response response = client.newCall(request).execute();</code></pre>
+
+                    <h6 class="mt-3">Go</h6>
+                    <pre class="bg-light p-3 rounded"><code>package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "net/http"
+)
+
+func main() {
+    payload := map[string]string{
+        "name":    "My Service",
+        "slug":    "my-service",
+        "baseUrl": "https://api.myservice.com",
+    }
+    body, _ := json.Marshal(payload)
+
+    req, _ := http.NewRequest("POST",
+        "http://localhost:5075/api/v1/external-services/register",
+        bytes.NewBuffer(body))
+    req.Header.Set("X-API-Key", "dn_your_key")
+
+    client := &http.Client{}
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+}</code></pre>
+
+                    <h6 class="mt-3">Rust</h6>
+                    <pre class="bg-light p-3 rounded"><code>use reqwest;
+use serde_json::json;
+
+#[tokio::main]
+async fn main() {
+    let client = reqwest::Client::new();
+    let response = client
+        .post("http://localhost:5075/api/v1/external-services/register")
+        .header("X-API-Key", "dn_your_key")
+        .json(&json!({
+            "name": "My Service",
+            "slug": "my-service",
+            "baseUrl": "https://api.myservice.com"
+        }))
+        .send()
+        .await
+        .unwrap();
+}</code></pre>
+
+                    <h6 class="mt-3">PHP</h6>
+                    <pre class="bg-light p-3 rounded"><code>$ch = curl_init("http://localhost:5075/api/v1/external-services/register");
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "X-API-Key: dn_your_key",
+    "Content-Type: application/json"
+]);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+    "name" => "My Service",
+    "slug" => "my-service",
+    "baseUrl" => "https://api.myservice.com"
+]));
+$response = curl_exec($ch);
+curl_close($ch);</code></pre>
+
+                    <h6 class="mt-3">Ruby</h6>
+                    <pre class="bg-light p-3 rounded"><code>require 'net/http'
+require 'json'
+
+uri = URI("http://localhost:5075/api/v1/external-services/register")
+request = Net::HTTP::Post.new(uri)
+request["X-API-Key"] = "dn_your_key"
+request.body = {
+  name: "My Service",
+  slug: "my-service",
+  baseUrl: "https://api.myservice.com"
+}.to_json
+
+response = Net::HTTP.start(uri.host, uri.port) { |http| http.request(request) }</code></pre>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M1 2.828c.885-.37 2.154-.769 4-.9V13.5c-1.842.115-3.114.51-4 .9V2.828zM5 .5c1.84-.13 3.366-.065 5 .065V12.9c-1.634-.13-3.16-.195-5-.065V.5zM15 2.828v10.472c-.815-.345-1.983-.668-3-.747V1.97c1.148.059 2.31.36 3 .858zM10 1.23c1.16-.13 2.322-.208 3-.166V12.9c-.678.042-1.84.036-3-.166V1.23z"/></svg> Get an OIDC Token</h5></div>
+                <div class="card-body">
+                    <p><strong>Password</strong> flow (for your own back-end apps):</p>
+                    <pre class="bg-light p-3 rounded"><code>curl -X POST @Model.IdentityUrl/connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "username=user@example.com" \
+  -d "password=Password123" \
+  -d "scope=openid profile email roles offline_access"</code></pre>
+
+                    <p class="mt-3"><strong>Client credentials</strong> flow (for APIs):</p>
+                    <pre class="bg-light p-3 rounded"><code>curl -X POST @Model.IdentityUrl/connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=client_credentials" \
+  -d "client_id=your_client_id" \
+  -d "client_secret=your_client_secret" \
+  -d "scope=api"</code></pre>
+                </div>
+            </div>
+
+            @* ──── Card: Manage API Keys ──── *@
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/></svg> Manage API Keys</h5></div>
+                <div class="card-body">
+                    <p>Create, list, rotate, and delete your API keys from the dashboard or via the API.</p>
+
+                    <h6 class="mt-3">cURL — List keys</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X GET http://localhost:5075/api/v1/admin/tenants/{tenantId}/api-keys \
+  -H "Authorization: Bearer {token}"</code></pre>
+
+                    <h6 class="mt-3">cURL — Create a key</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X POST http://localhost:5075/api/v1/admin/tenants/{tenantId}/api-keys \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "My prod key", "scopes": ["api"]}'</code></pre>
+
+                    <h6 class="mt-3">cURL — Rotate a key</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X POST http://localhost:5075/api/v1/admin/tenants/{tenantId}/api-keys/{keyId}/rotate \
+  -H "Authorization: Bearer {token}"</code></pre>
+
+                    <h6 class="mt-3">cURL — Delete a key</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X DELETE http://localhost:5075/api/v1/admin/tenants/{tenantId}/api-keys/{keyId} \
+  -H "Authorization: Bearer {token}"</code></pre>
+                </div>
+            </div>
+
+            @* ──── Card: Update a Service (PATCH) ──── *@
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10z"/></svg> Update a Service (PATCH)</h5></div>
+                <div class="card-body">
+                    <p>Update the URL, description or health endpoint of a registered service.</p>
+
+                    <h6 class="mt-3">cURL</h6>
+                    <pre class="bg-light p-3 rounded"><code>curl -X PATCH http://localhost:5075/api/v1/external-services/{serviceId} \
+  -H "X-API-Key: dn_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"baseUrl": "https://new-url.com", "description": "Updated"}'</code></pre>
+
+                    <h6 class="mt-3">Python</h6>
+                    <pre class="bg-light p-3 rounded"><code>import requests
+response = requests.patch(
+    "http://localhost:5075/api/v1/external-services/{id}",
+    json={"baseUrl": "https://new-url.com"},
+    headers={"X-API-Key": "dn_your_key"}
+)
+print(response.json())</code></pre>
+                </div>
+            </div>
+        </div>
+
+        @* ──── Tab 2: Gateway ──── *@
+        <div class="tab-pane fade" id="en-gateway" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 0a8 8 0 1 0 0 16A8 8 0 0 0 8 0zM2.04 4.81A6.503 6.503 0 0 1 7 1.18v.7c0 .6-.4 1.1-.9 1.4l-.5.3c-.5.3-.6.9-.3 1.3l.3.4c.2.3.3.7.1 1.1l-.4.7c-.2.3-.5.5-.9.5h-.3c-.6 0-1.1.5-1.1 1.1v.7c0 .6-.5 1.1-1.1 1.1-.2 0-.3 0-.5-.1l-.5-.3a6.44 6.44 0 0 1-1.32-3.97zm7.85 8.55A6.48 6.48 0 0 1 8 14.82v-.9c0-.7.4-1.3.9-1.7l.2-.1c.5-.3.9-.9.7-1.5l-.3-.8c-.1-.3 0-.6.1-.8l1-1.2c.3-.3.7-.5 1.1-.5h.7c.4 0 .8-.1 1.1-.3l.1-.1c.5.9.8 2.1.6 3.3a6.51 6.51 0 0 1-3.8 3.68z"/></svg> Gateway — External Service Access</h5></div>
+                <div class="card-body">
+                    <p>Once your service is registered, call it through the Gateway with your <strong>API Key</strong> or a <strong>JWT token</strong>:</p>
+
+                    <h6 class="mt-3">cURL</h6>
+                    <pre class="bg-light p-3 rounded"><code># With API Key
+curl -X GET @Model.GatewayUrl/ext/my-service/health \
+  -H "X-API-Key: dn_your_key"
+
+# With JWT token (obtained from /connect/token)
+curl -X GET @Model.GatewayUrl/ext/my-service/api/resources \
+  -H "Authorization: Bearer eyJ..."</code></pre>
+
+                    <h6 class="mt-3">Python</h6>
+                    <pre class="bg-light p-3 rounded"><code>import requests
+
+GATEWAY = "@Model.GatewayUrl"
+API_KEY = "dn_your_key"
+TOKEN = "eyJ..."  # from /connect/token
+
+# With API Key
+r = requests.get(f"{GATEWAY}/ext/my-service/health",
+    headers={"X-API-Key": API_KEY})
+
+# With JWT
+r = requests.get(f"{GATEWAY}/ext/my-service/api/users",
+    headers={"Authorization": f"Bearer {TOKEN}"})</code></pre>
+
+                    <h6 class="mt-3">Node.js (axios)</h6>
+                    <pre class="bg-light p-3 rounded"><code>const axios = require('axios');
+const GATEWAY = "@Model.GatewayUrl";
+const API_KEY = "dn_your_key";
+const TOKEN = "eyJ...";
+
+// With API Key
+await axios.get(`${GATEWAY}/ext/my-service/health`,
+    { headers: { 'X-API-Key': API_KEY } });
+
+// With JWT
+await axios.get(`${GATEWAY}/ext/my-service/api/users`,
+    { headers: { Authorization: `Bearer ${TOKEN}` } });</code></pre>
+
+                    <h6 class="mt-3">C# (HttpClient)</h6>
+                    <pre class="bg-light p-3 rounded"><code>using var client = new HttpClient();
+client.BaseAddress = new Uri("@Model.GatewayUrl");
+
+// With API Key
+client.DefaultRequestHeaders.Add("X-API-Key", "dn_your_key");
+var resp1 = await client.GetAsync("/ext/my-service/health");
+
+// With JWT
+client.DefaultRequestHeaders.Authorization =
+    new AuthenticationHeaderValue("Bearer", token);
+var resp2 = await client.GetAsync("/ext/my-service/api/users");</code></pre>
+
+                    <h6 class="mt-3">Java (OkHttp)</h6>
+                    <pre class="bg-light p-3 rounded"><code>OkHttpClient client = new OkHttpClient();
+
+// With API Key
+Request req1 = new Request.Builder()
+    .url("@Model.GatewayUrl/ext/my-service/health")
+    .addHeader("X-API-Key", "dn_your_key")
+    .build();
+Response r1 = client.newCall(req1).execute();
+
+// With JWT
+Request req2 = new Request.Builder()
+    .url("@Model.GatewayUrl/ext/my-service/api/users")
+    .addHeader("Authorization", "Bearer eyJ...")
+    .build();
+Response r2 = client.newCall(req2).execute();</code></pre>
+
+                    <h6 class="mt-3">Go</h6>
+                    <pre class="bg-light p-3 rounded"><code>package main
+
+import (
+    "net/http"
+    "fmt"
+)
+
+func main() {
+    gateway := "@Model.GatewayUrl"
+    apiKey := "dn_your_key"
+    token := "eyJ..."
+
+    // With API Key
+    req1, _ := http.NewRequest("GET", gateway + "/ext/my-service/health", nil)
+    req1.Header.Set("X-API-Key", apiKey)
+
+    // With JWT
+    req2, _ := http.NewRequest("GET", gateway + "/ext/my-service/api/users", nil)
+    req2.Header.Set("Authorization", "Bearer " + token)
+
+    client := &http.Client{}
+    client.Do(req1)
+    client.Do(req2)
+}</code></pre>
+
+                    <h6 class="mt-3">Rust</h6>
+                    <pre class="bg-light p-3 rounded"><code>use reqwest;
+
+#[tokio::main]
+async fn main() {
+    let client = reqwest::Client::new();
+    let gateway = "@Model.GatewayUrl";
+
+    // With API Key
+    let r1 = client.get(format!("{}/ext/my-service/health", gateway))
+        .header("X-API-Key", "dn_your_key")
+        .send().await;
+
+    // With JWT
+    let r2 = client.get(format!("{}/ext/my-service/api/users", gateway))
+        .bearer_auth("eyJ...")
+        .send().await;
+}</code></pre>
+
+                    <h6 class="mt-3">PHP</h6>
+                    <pre class="bg-light p-3 rounded"><code>$gateway = "@Model.GatewayUrl";
+
+// With API Key
+$ch1 = curl_init("$gateway/ext/my-service/health");
+curl_setopt($ch1, CURLOPT_HTTPHEADER, ["X-API-Key: dn_your_key"]);
+curl_exec($ch1);
+
+// With JWT
+$ch2 = curl_init("$gateway/ext/my-service/api/users");
+curl_setopt($ch2, CURLOPT_HTTPHEADER, ["Authorization: Bearer eyJ..."]);
+curl_exec($ch2);</code></pre>
+
+                    <h6 class="mt-3">Ruby</h6>
+                    <pre class="bg-light p-3 rounded"><code>require 'net/http'
+require 'uri'
+
+gateway = "@Model.GatewayUrl"
+
+# With API Key
+uri1 = URI("#{gateway}/ext/my-service/health")
+req1 = Net::HTTP::Get.new(uri1)
+req1["X-API-Key"] = "dn_your_key"
+Net::HTTP.start(uri1.host, uri1.port) { |http| http.request(req1) }
+
+# With JWT
+uri2 = URI("#{gateway}/ext/my-service/api/users")
+req2 = Net::HTTP::Get.new(uri2)
+req2["Authorization"] = "Bearer eyJ..."
+Net::HTTP.start(uri2.host, uri2.port) { |http| http.request(req2) }</code></pre>
+                </div>
+            </div>
+
+            @* ──── Card: Health Monitoring ──── *@
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10zm0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg> Health Monitoring</h5></div>
+                <div class="card-body">
+                    <p>The Gateway periodically checks the health of your external services (every 30 seconds).</p>
+                    <p>If a service fails to respond 3 times in a row, its status changes to <strong>Suspended</strong>.</p>
+                    <p>Check health status from the dashboard: <code>/Developer/Services</code> — ✅ green means OK, ❌ red means failures.</p>
+                </div>
+            </div>
+        </div>
+
+        @* ──── Tab 3: Frameworks ──── *@
+        <div class="tab-pane fade" id="en-frameworks" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg> Framework Examples</h5></div>
+                <div class="card-body">
+                    <p>Configure your framework to call the Gateway in a reusable way.</p>
+
+                    <h6 class="mt-3">Express.js (Node.js)</h6>
+                    <pre class="bg-light p-3 rounded"><code>const axios = require('axios');
+
+const gatewayClient = (apiKey) => {
+  const client = axios.create({
+    baseURL: '@Model.GatewayUrl',
+    headers: { 'X-API-Key': apiKey }
+  });
+  return client;
+};
+
+const client = gatewayClient('dn_your_key');
+const health = await client.get('/ext/my-service/health');
+const users = await client.get('/ext/my-service/api/users');</code></pre>
+
+                    <h6 class="mt-3">Spring Boot (Java)</h6>
+                    <pre class="bg-light p-3 rounded"><code>@@Configuration
+public class GatewayConfig {
+
+    @@Bean
+    public RestTemplate gatewayRestTemplate() {
+        return new RestTemplate();
+    }
+
+    public HttpHeaders authHeaders(String apiKey) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("X-API-Key", apiKey);
+        return headers;
+    }
+}
+
+@@Service
+public class MyService {
+    public String call() {
+        RestTemplate rt = new RestTemplate();
+        HttpEntity&lt;Void&gt; entity = new HttpEntity&lt;&gt;(authHeaders("dn_your_key"));
+        ResponseEntity&lt;String&gt; r = rt.exchange(
+            "@Model.GatewayUrl/ext/my-service/health",
+            HttpMethod.GET, entity, String.class);
+        return r.getBody();
+    }
+}</code></pre>
+
+                    <h6 class="mt-3">FastAPI (Python)</h6>
+                    <pre class="bg-light p-3 rounded"><code>from fastapi import FastAPI, HTTPException
+import httpx
+
+GATEWAY = "@Model.GatewayUrl"
+API_KEY = "dn_your_key"
+
+app = FastAPI()
+
+async def call_gateway(slug: str, path: str):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            f"{GATEWAY}/ext/{slug}/{path}",
+            headers={"X-API-Key": API_KEY}
+        )
+        if r.status_code != 200:
+            raise HTTPException(r.status_code, r.text)
+        return r.json()
+
+@@app.get("/api/my-health")
+async def health():
+    return await call_gateway("my-service", "health")</code></pre>
+
+                    <h6 class="mt-3">ASP.NET Core (C#)</h6>
+                    <pre class="bg-light p-3 rounded"><code>// Program.cs
+builder.Services.AddHttpClient("Gateway", client => {
+    client.BaseAddress = new Uri("@Model.GatewayUrl");
+    client.DefaultRequestHeaders.Add("X-API-Key", "dn_your_key");
+});
+
+public class MyService
+{
+    private readonly IHttpClientFactory _http;
+
+    public MyService(IHttpClientFactory http) => _http = http;
+
+    public async Task&lt;string&gt; GetHealthAsync()
+    {
+        var client = _http.CreateClient("Gateway");
+        return await client.GetStringAsync("/ext/my-service/health");
+    }
+}</code></pre>
+
+                    <h6 class="mt-3">Gin (Go)</h6>
+                    <pre class="bg-light p-3 rounded"><code>package main
+
+import (
+    "net/http"
+    "io/ioutil"
+    "fmt"
+)
+
+type GatewayClient struct {
+    BaseURL string
+    APIKey  string
+    client  *http.Client
+}
+
+func NewGatewayClient(baseURL, apiKey string) *GatewayClient {
+    return &GatewayClient{
+        BaseURL: baseURL,
+        APIKey:  apiKey,
+        client:  &http.Client{},
+    }
+}
+
+func (g *GatewayClient) Get(path string) (string, error) {
+    req, _ := http.NewRequest("GET", g.BaseURL + path, nil)
+    req.Header.Set("X-API-Key", g.APIKey)
+    resp, err := g.client.Do(req)
+    if err != nil { return "", err }
+    defer resp.Body.Close()
+    body, _ := ioutil.ReadAll(resp.Body)
+    return string(body), nil
+}
+
+func main() {
+    gw := NewGatewayClient("@Model.GatewayUrl", "dn_your_key")
+    health, _ := gw.Get("/ext/my-service/health")
+    fmt.Println(health)
+}</code></pre>
+
+                    <h6 class="mt-3">Ruby on Rails</h6>
+                    <pre class="bg-light p-3 rounded"><code># config/initializers/gateway.rb
+require 'net/http'
+
+module Gateway
+  BASE = '@Model.GatewayUrl'
+  API_KEY = 'dn_your_key'
+
+  def self.get(path)
+    uri = URI("#{BASE}#{path}")
+    req = Net::HTTP::Get.new(uri)
+    req['X-API-Key'] = API_KEY
+    Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == 'https') do |http|
+      http.request(req)
+    end
+  end
+end
+
+class MyController &lt; ApplicationController
+  def health
+    response = Gateway.get('/ext/my-service/health')
+    render json: response.body
+  end
+end</code></pre>
+
+                    <h6 class="mt-3">Laravel (PHP)</h6>
+                    <pre class="bg-light p-3 rounded"><code>use Illuminate\Support\Facades\Http;
+
+'gateway' => [
+    'base_url' => '@Model.GatewayUrl',
+    'api_key' => env('GATEWAY_API_KEY', 'dn_your_key'),
+],
+
+class MyService
+{
+    public function health()
+    {
+        return Http::withHeaders([
+            'X-API-Key' => config('services.gateway.api_key'),
+        ])->get(config('services.gateway.base_url') . '/ext/my-service/health')->json();
+    }
+}</code></pre>
+                </div>
+            </div>
+        </div>
+
+        @* ──── Tab 4: Error Handling ──── *@
+        <div class="tab-pane fade" id="en-errors" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/></svg> Error Handling</h5></div>
+                <div class="card-body">
+                    <p>Error codes returned by the Gateway and Identity API:</p>
+
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Code</th>
+                                <th>Cause</th>
+                                <th>Solution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="error-code">401</span></td>
+                                <td>Missing or invalid API key</td>
+                                <td>Check the <code>X-API-Key</code> header. Generate a new key from the dashboard.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="error-code">403</span></td>
+                                <td>JWT token expired or invalid</td>
+                                <td>Get a new token via <code>/connect/token</code>. Verify requested scopes.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="error-code">404</span></td>
+                                <td>Service slug not found</td>
+                                <td>Verify the service is registered and active. <code>GET /api/v1/external-services</code> to list.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="error-code">429</span></td>
+                                <td>Too many requests (rate limited)</td>
+                                <td>Wait 60 seconds before retrying. Contact us to increase the limit.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="error-code">502</span></td>
+                                <td>External service unreachable</td>
+                                <td>Check that your service is running. Gateway times out after 30 seconds.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="error-code">504</span></td>
+                                <td>External service timeout</td>
+                                <td>The remote service took too long to respond. Optimize response time.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h6 class="mt-4">Example: handle errors in Python</h6>
+                    <pre class="bg-light p-3 rounded"><code>import requests
+
+GATEWAY = "@Model.GatewayUrl"
+API_KEY = "dn_your_key"
+
+def call_service(path):
+    r = requests.get(
+        f"{GATEWAY}/ext/my-service/{path}",
+        headers={"X-API-Key": API_KEY}
+    )
+    if r.status_code == 401:
+        print("Invalid API key — check your key")
+    elif r.status_code == 404:
+        print("Service not found — check the slug")
+    elif r.status_code == 502:
+        print("Upstream service unavailable — retry later")
+    elif r.status_code != 200:
+        print(f"Error {r.status_code}: {r.text}")
+    else:
+        return r.json()</code></pre>
+                </div>
+            </div>
+        </div>
+
+        @* ──── Tab 5: Production ──── *@
+        <div class="tab-pane fade" id="en-prod" role="tabpanel">
+            <div class="card mb-4">
+                <div class="card-header"><h5 class="mb-0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="vertical-align:-2px"><path d="M5.338 1.59a61.44 61.44 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.725 10.725 0 0 0 2.287 2.233c.346.244.652.42.893.533.12.057.218.095.293.118a.55.55 0 0 0 .101.025.615.615 0 0 0 .1-.025c.076-.023.174-.061.294-.118.24-.113.547-.29.893-.533a10.726 10.726 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1c-.53.067-1.552.29-2.662.59z"/></svg> Production Deployment</h5></div>
+                <div class="card-body">
+                    <p>In production, replace localhost URLs with your Gateway and Identity domains:</p>
+
+                    <pre class="bg-light p-3 rounded"><code># Instead of localhost:5075 (Identity) and localhost:5000 (Gateway)
+IDENTITY_URL=https://auth.dotnetniger.com
+GATEWAY_URL=https://gateway.dotnetniger.com</code></pre>
+
+                    <p class="mt-3">Configure these URLs in <code>appsettings.json</code> via environment variables:</p>
+
+                    <pre class="bg-light p-3 rounded"><code># Example .env file for Docker / server
+DeveloperPortal__GatewayBaseUrl=https://gateway.dotnetniger.com
+Identity__BaseUrl=https://auth.dotnetniger.com
+
+# For API calls, always use the production domain:
+curl -X GET https://gateway.dotnetniger.com/ext/my-service/health \
+  -H "X-API-Key: dn_your_prod_key"</code></pre>
+
+                    <h6 class="mt-3">Recommendations</h6>
+                    <ul>
+                        <li><strong>HTTPS</strong> — Enable TLS on the Gateway and Identity. Use <code>RequireHttpsMetadata = true</code></li>
+                        <li><strong>API Keys</strong> — Generate separate production keys. Never reuse development keys</li>
+                        <li><strong>Rate limiting</strong> — Adjust limits via <code>RateLimiting:PermitLimit</code> and <code>RateLimiting:WindowSeconds</code></li>
+                        <li><strong>OIDC Certificates</strong> — In production, use real certificates (via <code>OpenIddict:CertificatePath</code>) instead of ephemeral dev keys</li>
+                        <li><strong>Logs</strong> — Monitor Gateway errors via <code>logs/gateway-*.log</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+}
+</div>
+
+<script>
+document.querySelectorAll('pre code').forEach(function(block) {
+    var pre = block.parentElement;
+    var btn = document.createElement('button');
+    btn.className = 'btn btn-sm btn-outline-secondary copy-btn';
+    btn.textContent = '@(Model.Lang == "fr" ? "Copier" : "Copy")';
+    btn.onclick = function() {
+        var text = '';
+        block.querySelectorAll('span').forEach(function(s) { text += s.textContent; });
+        if (!text) text = block.textContent || block.innerText;
+        navigator.clipboard.writeText(text).then(function() {
+            btn.textContent = '@(Model.Lang == "fr" ? "Copié !" : "Copied!")';
+            setTimeout(function() { btn.textContent = '@(Model.Lang == "fr" ? "Copier" : "Copy")'; }, 2000);
+        });
+    };
+    pre.appendChild(btn);
+});
+</script>

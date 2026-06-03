@@ -1,0 +1,146 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.Developer.Admin.TenantsModel
+@{
+    ViewData["Title"] = "Tenants";
+    // Layout géré par _ViewStart.cshtml
+}
+
+<h1>Tenants</h1>
+<p class="lead">Tous les tenants de la plateforme.</p>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-@(Model.IsError ? "danger" : "success") alert-dismissible fade show" role="alert">
+        @Model.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Liste des tenants</h5>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
+            + Nouveau tenant
+        </button>
+    </div>
+    <div class="card-body">
+        @if (Model.Tenants.Count == 0)
+        {
+            <p class="text-muted mb-0">Aucun tenant.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Slug</th>
+                            <th>Email admin</th>
+                            <th>Statut</th>
+                            <th>Créé le</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model.Tenants)
+                        {
+                            <tr>
+                                <td>@t.Name</td>
+                                <td><code>@t.Slug</code></td>
+                                <td><small>@t.AdminEmail</small></td>
+                                <td>
+                                    <span class="badge bg-@(t.IsActive ? "success" : "secondary")">
+                                        @(t.IsActive ? "Actif" : "Inactif")
+                                    </span>
+                                </td>
+                                <td><small>@t.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                                <td>
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#editModal-@t.Id"
+                                            title="Modifier">&#9998;</button>
+                                    <form method="post" asp-page-handler="ToggleActive" asp-route-tenantId="@t.Id" asp-route-isActive="@t.IsActive" style="display:inline">
+                                        <button type="submit" class="btn btn-outline-@(t.IsActive ? "warning" : "success") btn-sm"
+                                                title="@(t.IsActive ? "Désactiver" : "Activer")">
+                                            @(t.IsActive ? "&#128465;" : "&#10003;")
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="Delete" asp-route-tenantId="@t.Id" id="delete-form-@t.Id" style="display:none"></form>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" title="Supprimer"
+                                            data-modal-delete="delete-form-@t.Id"
+                                            data-modal-label="Supprimer définitivement le tenant @t.Name et toutes ses données ?">
+                                        &#128465;
+                                    </button>
+                                    <a href="/Developer/Admin/Tenants/@t.Id/Users" class="btn btn-outline-info btn-sm">Utilisateurs</a>
+                                    <a href="/Developer/Admin/Tenants/@t.Id/Roles" class="btn btn-outline-info btn-sm">Rôles</a>
+                                    <a href="/Developer/Admin/Tenants/@t.Id/Clients" class="btn btn-outline-info btn-sm">Clients</a>
+                                    <a href="/Developer/Admin/Tenants/@t.Id/ApiKeys" class="btn btn-outline-info btn-sm">Clés API</a>
+                                </td>
+                            </tr>
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editModal-@t.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="post" asp-page-handler="Edit" asp-route-tenantId="@t.Id">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Modifier @t.Name</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Nom</label>
+                                                    <input name="EditInput.Name" class="form-control" value="@t.Name" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Description</label>
+                                                    <textarea name="EditInput.Description" class="form-control" rows="2">@t.Description</textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Create">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouveau tenant</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nom</label>
+                        <input name="CreateInput.Name" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Slug</label>
+                        <input name="CreateInput.Slug" class="form-control" required pattern="[a-z0-9-]+" placeholder="mon-tenant" />
+                        <small class="text-muted">Identifiant unique — l'email admin sera <code>admin&#64;{slug}.dotnetniger.com</code></small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="CreateInput.Description" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

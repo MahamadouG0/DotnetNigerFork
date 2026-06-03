@@ -1,0 +1,148 @@
+@page "/Developer/Admin/Tenants/{tenantId:guid}/Clients"
+@model DotnetNiger.Identity.Web.Pages.Developer.Admin.ClientsModel
+@{
+    ViewData["Title"] = "Clients OAuth";
+    // Layout géré par _ViewStart.cshtml
+}
+
+<h1>Clients OAuth2</h1>
+<p class="lead">Clients OAuth2 enregistrés pour ce tenant.</p>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-@(Model.IsError ? "danger" : "success") alert-dismissible fade show" role="alert">
+        @Model.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Nouveau client</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Create">
+                    <div class="mb-3">
+                        <label class="form-label" for="clientName">Nom du client *</label>
+                        <input class="form-control" id="clientName" asp-for="Input.ClientName" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea class="form-control" id="description" asp-for="Input.Description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="grantTypes">Types d'octroi</label>
+                        <input class="form-control" id="grantTypes" asp-for="Input.AllowedGrantTypes" placeholder="authorization_code, password, client_credentials, refresh_token" />
+                        <small class="text-muted">Séparés par des virgules</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="redirectUri">URL de redirection</label>
+                        <input class="form-control" id="redirectUri" asp-for="Input.RedirectUri" placeholder="http://localhost:5100/signin-oidc" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="postLogoutUri">URL post-déconnexion</label>
+                        <input class="form-control" id="postLogoutUri" asp-for="Input.PostLogoutRedirectUri" placeholder="http://localhost:5100/" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Clients (@Model.Clients.Count)</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Clients.Count == 0)
+                {
+                    <p class="text-muted mb-0">Aucun client OAuth2 pour ce tenant.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Client ID</th>
+                                    <th>Type</th>
+                                    <th>Statut</th>
+                                    <th>Créé le</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var c in Model.Clients)
+                                {
+                                    <tr>
+                                        <td>@c.ClientName</td>
+                                        <td><code>@c.ClientId</code></td>
+                                        <td><small>@string.Join(", ", c.AllowedGrantTypes)</small></td>
+                                        <td>
+                                            <span class="badge bg-@(c.IsActive ? "success" : "secondary")">
+                                                @(c.IsActive ? "Actif" : "Inactif")
+                                            </span>
+                                        </td>
+                                        <td><small>@c.CreatedAt.ToString("g")</small></td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    data-bs-toggle="modal" data-bs-target="#editModal-@c.Id">Modifier</button>
+                                            <form method="post" asp-page-handler="Delete" asp-route-clientId="@c.Id"
+                                                  onsubmit="return confirm('Supprimer le client @c.ClientName ?');"
+                                                  style="display:inline">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <!-- Edit Modal -->
+                                    <div class="modal fade" id="editModal-@c.Id" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form method="post" asp-page-handler="Edit" asp-route-clientId="@c.Id">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Modifier @c.ClientName</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Nom du client</label>
+                                                            <input name="EditInput.ClientName" class="form-control" value="@c.ClientName" />
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Description</label>
+                                                            <textarea name="EditInput.Description" class="form-control" rows="2">@c.Description</textarea>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Types d'octroi</label>
+                                                            <input name="EditInput.AllowedGrantTypes" class="form-control" value="@string.Join(", ", c.AllowedGrantTypes)" />
+                                                            <small class="text-muted">Séparés par des virgules</small>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">URL de redirection</label>
+                                                            <input name="EditInput.RedirectUri" class="form-control" placeholder="http://localhost:5100/signin-oidc" />
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">URL post-déconnexion</label>
+                                                            <input name="EditInput.PostLogoutRedirectUri" class="form-control" placeholder="http://localhost:5100/" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

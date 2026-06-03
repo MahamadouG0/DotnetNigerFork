@@ -1,174 +1,66 @@
 using DotnetNiger.Community.Application.DTOs;
 using DotnetNiger.Community.Application.Services;
 using DotnetNiger.Community.Domain.Entities;
-using DotnetNiger.Community.Domain.Interfaces;
+using DotnetNiger.Community.Infrastructure;
 using FluentAssertions;
-using Moq;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace DotnetNiger.Community.Tests.Application.Services;
 
 public class CommentServiceTests
 {
-    private readonly Mock<ICommentRepository> _commentRepositoryMock;
-    private readonly Mock<IPostRepository> _postRepositoryMock;
-    private readonly CommentService _commentService;
-
-    public CommentServiceTests()
+    private static AppDbContext CreateDb()
     {
-        _commentRepositoryMock = new Mock<ICommentRepository>();
-        _postRepositoryMock = new Mock<IPostRepository>();
-
-        _commentService = new CommentService(
-            _commentRepositoryMock.Object,
-            _postRepositoryMock.Object);
+        var opts = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase(Guid.NewGuid().ToString())
+            .Options;
+        return new AppDbContext(opts);
     }
 
     [Fact]
-    public async Task GetAllCommentsAsync_WithValidPagination_ReturnsPagedComments()
+    public async Task GetByPostIdAsync_ReturnsOrderedComments()
     {
-        // Arrange
-        var comments = new List<Comment>
-        {
-            new() { Id = "1", Content = "Comment 1", PostId = "post1", CreatedAt = DateTime.UtcNow },
-            new() { Id = "2", Content = "Comment 2", PostId = "post1", CreatedAt = DateTime.UtcNow }
-        };
+        var db = CreateDb();
+        var postId = Guid.NewGuid();
+        db.Comments.AddRange(
+            new Comment { Id = Guid.NewGuid(), Content = "C1", PostId = postId, CreatedAt = DateTime.UtcNow.AddHours(-1) },
+            new Comment { Id = Guid.NewGuid(), Content = "C2", PostId = postId, CreatedAt = DateTime.UtcNow });
+        await db.SaveChangesAsync();
 
-        _commentRepositoryMock
-            .Setup(x => x.GetPagedAsync(
-                It.IsAny<Func<Comment, bool>>(),
-                It.IsAny<int>(),
-                It.IsAny<int>()))
-            .ReturnsAsync((comments, comments.Count));
+        var svc = new CommentService(db);
+        var result = await svc.GetByPostIdAsync(postId);
 
-        // Act
-        var result = await _commentService.GetAllCommentsAsync(page: 1, pageSize: 20);
-
-        // Assert
         result.Should().HaveCount(2);
+        result[0].Content.Should().Be("C2");
     }
 
     [Fact]
-    public async Task GetCommentsByPostIdAsync_WithValidPostId_ReturnsComments()
+    public async Task CreateAsync_AddsComment()
     {
-        // Arrange
-        var postId = "post1";
-        var comments = new List<Comment>
-        {
-            new() { Id = "1", Content = "Comment 1", PostId = postId, CreatedAt = DateTime.UtcNow }
-        };
+        var db = CreateDb();
+        var request = new CreateCommentRequest { Content = "New comment", PostId = Guid.NewGuid() };
 
-        _commentRepositoryMock
-            .Setup(x => x.GetPagedAsync(
-                It.IsAny<Func<Comment, bool>>(),
-                It.IsAny<int>(),
-                It.IsAny<int>()))
-            .ReturnsAsync((comments, comments.Count));
+        var svc = new CommentService(db);
+        var result = await svc.CreateAsync(request, Guid.NewGuid(), "Author", "");
 
-        // Act
-        var result = await _commentService.GetCommentsByPostIdAsync(postId);
-
-        // Assert
-        result.Should().HaveCount(1);
+        result.Content.Should().Be("New comment");
+        db.Comments.Count().Should().Be(1);
     }
 
     [Fact]
-    public async Task CreateCommentAsync_WithValidRequest_CreatesComment()
+    public async Task DeleteAsync_RemovesComment()
     {
-        // Arrange
-        var postId = "post1";
-        var post = new Post { Id = postId, Title = "Test", Content = "Test" };
+        var db = CreateDb();
+        var userId = Guid.NewGuid();
+        var comment = new Comment { Id = Guid.NewGuid(), Content = "Test", UserId = userId, PostId = Guid.NewGuid() };
+        db.Comments.Add(comment);
+        await db.SaveChangesAsync();
 
-        var request = new CreateCommentDto
-        {
-            Content = "New Comment",
-            PostId = postId,
-            AuthorId = "user123"
-        };
+        var svc = new CommentService(db);
+        var deleted = await svc.DeleteAsync(comment.Id, userId);
 
-        _postRepositoryMock
-            .Setup(x => x.GetByIdAsync(postId))
-            .ReturnsAsync(post);
-
-        _commentRepositoryMock
-            .Setup(x => x.AddAsync(It.IsAny<Comment>()))
-            .Returns(Task.CompletedTask);
-
-        // Act
-        var result = await _commentService.CreateCommentAsync(request);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Content.Should().Be("New Comment");
-        _commentRepositoryMock.Verify(x => x.AddAsync(It.IsAny<Comment>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task DeleteCommentAsync_WithValidId_DeletesComment()
-    {
-        // Arrange
-        var commentId = "1";
-        var comment = new Comment { Id = commentId, Content = "Test", PostId = "post1" };
-
-        _commentRepositoryMock
-            .Setup(x => x.GetByIdAsync(commentId))
-            .ReturnsAsync(comment);
-
-        _commentRepositoryMock
-            .Setup(x => x.DeleteAsync(comment))
-            .Returns(Task.CompletedTask);
-
-        // Act
-        await _commentService.DeleteCommentAsync(commentId);
-
-        // Assert
-        _commentRepositoryMock.Verify(x => x.DeleteAsync(comment), Times.Once);
-    }
-
-    [Fact]
-    public async Task GetCommentByIdAsync_WithValidId_ReturnsComment()
-    {
-        // Arrange
-        var commentId = "1";
-        var comment = new Comment
-        {
-            Id = commentId,
-            Content = "Test Comment",
-            PostId = "post1",
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _commentRepositoryMock
-            .Setup(x => x.GetByIdAsync(commentId))
-            .ReturnsAsync(comment);
-
-        // Act
-        var result = await _commentService.GetCommentByIdAsync(commentId);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Content.Should().Be("Test Comment");
-    }
-
-    [Fact]
-    public async Task GetAllCommentsAsync_RespectsPagination()
-    {
-        // Arrange
-        var page = 2;
-        var pageSize = 15;
-        _commentRepositoryMock
-            .Setup(x => x.GetPagedAsync(
-                It.IsAny<Func<Comment, bool>>(),
-                It.IsAny<int>(),
-                It.IsAny<int>()))
-            .ReturnsAsync((new List<Comment>(), 0));
-
-        // Act
-        await _commentService.GetAllCommentsAsync(page, pageSize);
-
-        // Assert
-        _commentRepositoryMock.Verify(
-            x => x.GetPagedAsync(It.IsAny<Func<Comment, bool>>(), page, pageSize),
-            Times.Once);
+        deleted.Should().BeTrue();
+        db.Comments.Count().Should().Be(0);
     }
 }

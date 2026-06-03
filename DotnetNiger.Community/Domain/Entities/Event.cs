@@ -17,6 +17,7 @@ public class Event
     public int RegisteredCount { get; set; }
     public bool IsPublished { get; set; }
     public bool IsArchived { get; set; }
+    public bool IsDeleted { get; set; }
     public string MeetupLink { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
@@ -24,4 +25,5 @@ public class Event
     public ICollection<EventMedia> Medias { get; set; } = [];
     public ICollection<EventRegistration> Registrations { get; set; } = [];
     public ICollection<Comment> Comments { get; set; } = [];
+    public ICollection<EventTag> EventTags { get; set; } = [];
 }

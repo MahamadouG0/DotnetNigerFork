@@ -1,0 +1,146 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.Developer.DashboardModel
+@{
+    ViewData["Title"] = "Tableau de bord";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold mb-1">Tableau de bord</h1>
+        <p class="text-muted mb-0">Vue d'ensemble de votre activité sur la plateforme.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted small mb-1">ID du tenant</p>
+                        <h3 class="fw-bold mb-0 text-primary">@Model.Stats.TenantId</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-building fs-4 text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted small mb-1">Clés API actives</p>
+                        <h3 class="fw-bold mb-0 text-success">@Model.Stats.ActiveApiKeys</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-key fs-4 text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted small mb-1">Services enregistrés</p>
+                        <h3 class="fw-bold mb-0 text-info">@Model.Stats.ActiveServices</h3>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-boxes fs-4 text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted small mb-1">Gateway</p>
+                        @if (Model.Stats.GatewayConnected)
+                        {
+                            <h3 class="fw-bold mb-0 text-success">Connecté</h3>
+                        }
+                        else
+                        {
+                            <h3 class="fw-bold mb-0 text-warning">Hors ligne</h3>
+                        }
+                    </div>
+                    @if (Model.Stats.GatewayConnected)
+                    {
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-router fs-4 text-success"></i>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-router fs-4 text-warning"></i>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom-0 pt-4">
+                <h5 class="fw-bold mb-0"><i class="bi bi-lightning-fill me-2 text-warning"></i>Actions rapides</h5>
+            </div>
+            <div class="card-body pt-2">
+                <div class="d-grid gap-3">
+                    <a href="/Developer/ApiKeys" class="btn btn-outline-primary btn-lg text-start d-flex align-items-center">
+                        <i class="bi bi-key me-3 fs-5"></i>
+                        <span>Gérer mes clés API</span>
+                    </a>
+                    <a href="/Developer/Services" class="btn btn-outline-primary btn-lg text-start d-flex align-items-center">
+                        <i class="bi bi-boxes me-3 fs-5"></i>
+                        <span>Voir mes services</span>
+                    </a>
+                    <a href="/Developer/Profile" class="btn btn-outline-primary btn-lg text-start d-flex align-items-center">
+                        <i class="bi bi-person me-3 fs-5"></i>
+                        <span>Mon profil</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom-0 pt-4">
+                <h5 class="fw-bold mb-0"><i class="bi bi-info-circle me-2 text-primary"></i>Statut du Gateway</h5>
+            </div>
+            <div class="card-body pt-2">
+                @if (Model.Stats.GatewayConnected)
+                {
+                    <div class="d-flex align-items-center p-3 bg-success bg-opacity-10 rounded-3">
+                        <i class="bi bi-check-circle-fill text-success fs-3 me-3"></i>
+                        <div>
+                            <p class="fw-bold mb-0 text-success">Connecté et opérationnel</p>
+                            <p class="text-muted small mb-0">Le gateway fonctionne normalement.</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex align-items-center p-3 bg-warning bg-opacity-10 rounded-3">
+                        <i class="bi bi-exclamation-triangle-fill text-warning fs-3 me-3"></i>
+                        <div>
+                            <p class="fw-bold mb-0 text-warning">Non connecté</p>
+                            <p class="text-muted small mb-0">Mode développement — le gateway n'est pas disponible.</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

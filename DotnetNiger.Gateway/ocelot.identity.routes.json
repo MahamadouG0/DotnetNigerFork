@@ -6,19 +6,9 @@
       "DownstreamPathTemplate": "/bootstrap/super-admin",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
-      "RateLimitOptions": {
-        "ClientWhitelist": [],
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "PeriodTimespan": 60,
-        "Limit": 30
-      },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 10000,
-        "TimeoutValue": 15000
-      },
-      "Key": "IdentityAuthRoute",
+      "RateLimitOptions": { "ClientWhitelist": [], "EnableRateLimiting": true, "Period": "1m", "PeriodTimespan": 60, "Limit": 30 },
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 15000 },
+      "Key": "IdentitySuperAdminRoute",
       "SwaggerKey": "identity"
     },
     {
@@ -27,121 +17,42 @@
       "DownstreamPathTemplate": "/api/v1/auth/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
-      "RateLimitOptions": {
-        "ClientWhitelist": [],
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "PeriodTimespan": 60,
-        "Limit": 30
-      },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 10000,
-        "TimeoutValue": 15000
-      },
+      "RateLimitOptions": { "ClientWhitelist": [], "EnableRateLimiting": true, "Period": "1m", "PeriodTimespan": 60, "Limit": 30 },
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 15000 },
       "Key": "IdentityAuthRoute",
       "SwaggerKey": "identity"
     },
     {
-      "UpstreamPathTemplate": "/api/me/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"],
-      "DownstreamPathTemplate": "/api/v1/me/{everything}",
+      "UpstreamPathTemplate": "/api/profile/{everything}",
+      "UpstreamHttpMethod": ["GET", "PUT"],
+      "DownstreamPathTemplate": "/api/v1/profile/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 10000,
-        "TimeoutValue": 30000
-      },
-      "RateLimitOptions": {
-        "ClientWhitelist": [],
-        "EnableRateLimiting": true,
-        "Period": "1m",
-        "PeriodTimespan": 60,
-        "Limit": 100
-      },
-      "Key": "IdentityMeRoute",
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 15000 },
+      "RateLimitOptions": { "EnableRateLimiting": false },
+      "Key": "IdentityProfileRoute",
       "SwaggerKey": "identity"
     },
     {
-      "UpstreamPathTemplate": "/api/tokens/{everything}",
+      "UpstreamPathTemplate": "/api/tenants/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"],
-      "DownstreamPathTemplate": "/api/v1/tokens/{everything}",
+      "DownstreamPathTemplate": "/api/v1/admin/tenants/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 10000,
-        "TimeoutValue": 15000
-      },
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 20000 },
       "RateLimitOptions": { "EnableRateLimiting": false },
-      "Key": "IdentityTokensRoute",
+      "Key": "IdentityTenantsRoute",
       "SwaggerKey": "identity"
     },
     {
-      "UpstreamPathTemplate": "/api/social-links/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"],
-      "DownstreamPathTemplate": "/api/v1/social-links/{everything}",
+      "UpstreamPathTemplate": "/api/external-services/{everything}",
+      "UpstreamHttpMethod": ["GET", "POST", "PATCH", "DELETE"],
+      "DownstreamPathTemplate": "/api/v1/external-services/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 10000,
-        "TimeoutValue": 15000
-      },
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 15000 },
       "RateLimitOptions": { "EnableRateLimiting": false },
-      "Key": "IdentitySocialLinksRoute",
-      "SwaggerKey": "identity"
-    },
-    {
-      "UpstreamPathTemplate": "/api/roles/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"],
-      "DownstreamPathTemplate": "/api/v1/roles/{everything}",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 10000,
-        "TimeoutValue": 15000
-      },
-      "RateLimitOptions": { "EnableRateLimiting": false },
-      "Key": "IdentityRolesRoute",
-      "SwaggerKey": "identity"
-    },
-    {
-      "UpstreamPathTemplate": "/api/permissions/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"],
-      "DownstreamPathTemplate": "/api/v1/permissions/{everything}",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 10000,
-        "TimeoutValue": 15000
-      },
-      "RateLimitOptions": { "EnableRateLimiting": false },
-      "Key": "IdentityPermissionsRoute",
-      "SwaggerKey": "identity"
-    },
-    {
-      "UpstreamPathTemplate": "/api/api-keys/{everything}",
-      "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH"],
-      "DownstreamPathTemplate": "/api/v1/api-keys/{everything}",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 10000,
-        "TimeoutValue": 15000
-      },
-      "RateLimitOptions": { "EnableRateLimiting": false },
-      "Key": "IdentityApiKeysRoute",
+      "Key": "IdentityExternalServicesRoute",
       "SwaggerKey": "identity"
     },
     {
@@ -150,15 +61,7 @@
       "DownstreamPathTemplate": "/api/v1/admin/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
-      "AuthenticationOptions": { "AuthenticationProviderKey": "Bearer" },
-      "RouteClaimsRequirement": {
-        "is_super_admin": "true"
-      },
-      "QoSOptions": {
-        "ExceptionsAllowedBeforeBreaking": 3,
-        "DurationOfBreak": 10000,
-        "TimeoutValue": 20000
-      },
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 20000 },
       "RateLimitOptions": { "EnableRateLimiting": false },
       "Key": "IdentityAdminRoute",
       "SwaggerKey": "identity"
@@ -171,6 +74,71 @@
       "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
       "RateLimitOptions": { "EnableRateLimiting": false },
       "Key": "IdentityDiagnosticsRoute",
+      "SwaggerKey": "identity"
+    },
+    {
+      "UpstreamPathTemplate": "/api/v1/me",
+      "UpstreamHttpMethod": ["GET", "PUT"],
+      "DownstreamPathTemplate": "/api/v1/profile",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 15000 },
+      "RateLimitOptions": { "EnableRateLimiting": false },
+      "Key": "IdentityProfileMeRoute",
+      "SwaggerKey": "identity"
+    },
+    {
+      "UpstreamPathTemplate": "/api/auth/forgot-password",
+      "UpstreamHttpMethod": ["POST"],
+      "DownstreamPathTemplate": "/api/v1/auth/forgot-password",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
+      "RateLimitOptions": { "ClientWhitelist": [], "EnableRateLimiting": true, "Period": "1m", "PeriodTimespan": 60, "Limit": 5 },
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 15000 },
+      "Key": "IdentityAuthForgotPasswordRoute",
+      "SwaggerKey": "identity"
+    },
+    {
+      "UpstreamPathTemplate": "/api/auth/reset-password",
+      "UpstreamHttpMethod": ["POST"],
+      "DownstreamPathTemplate": "/api/v1/auth/reset-password",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
+      "RateLimitOptions": { "ClientWhitelist": [], "EnableRateLimiting": true, "Period": "1m", "PeriodTimespan": 60, "Limit": 5 },
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 15000 },
+      "Key": "IdentityAuthResetPasswordRoute",
+      "SwaggerKey": "identity"
+    },
+    {
+      "UpstreamPathTemplate": "/api/auth/refresh",
+      "UpstreamHttpMethod": ["POST"],
+      "DownstreamPathTemplate": "/api/v1/auth/refresh",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 15000 },
+      "Key": "IdentityAuthRefreshRoute",
+      "SwaggerKey": "identity"
+    },
+    {
+      "UpstreamPathTemplate": "/api/auth/request-email-verification",
+      "UpstreamHttpMethod": ["POST"],
+      "DownstreamPathTemplate": "/api/v1/auth/request-email-verification",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
+      "RateLimitOptions": { "ClientWhitelist": [], "EnableRateLimiting": true, "Period": "1m", "PeriodTimespan": 60, "Limit": 5 },
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 15000 },
+      "Key": "IdentityAuthRequestEmailVerificationRoute",
+      "SwaggerKey": "identity"
+    },
+    {
+      "UpstreamPathTemplate": "/api/auth/verify-email",
+      "UpstreamHttpMethod": ["POST"],
+      "DownstreamPathTemplate": "/api/v1/auth/verify-email",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5075 }],
+      "RateLimitOptions": { "ClientWhitelist": [], "EnableRateLimiting": true, "Period": "1m", "PeriodTimespan": 60, "Limit": 5 },
+      "QoSOptions": { "ExceptionsAllowedBeforeBreaking": 3, "DurationOfBreak": 10000, "TimeoutValue": 15000 },
+      "Key": "IdentityAuthVerifyEmailRoute",
       "SwaggerKey": "identity"
     }
   ]

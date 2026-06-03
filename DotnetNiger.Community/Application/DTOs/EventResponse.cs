@@ -20,4 +20,5 @@ public class EventResponse
     public string MeetupLink { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public List<EventMediaResponse> Medias { get; set; } = [];
+    public List<TagResponse> Tags { get; set; } = [];
 }

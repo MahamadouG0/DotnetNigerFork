@@ -1,9 +1,11 @@
 using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using DotnetNiger.Identity.Domain.Entities;
 using DotnetNiger.Identity.Infrastructure;
+using DotnetNiger.Identity.Application.DTOs;
 
 namespace DotnetNiger.Identity.Application.Services;
 
@@ -87,7 +89,7 @@ public class AuthService
         await _userManager.AddToRoleAsync(user, "User");
 
         var code = GenerateCode();
-        user.EmailConfirmationCode = code;
+        user.EmailConfirmationCode = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(code)));
         user.EmailConfirmationCodeExpiry = DateTime.UtcNow.AddMinutes(15);
         await _userManager.UpdateAsync(user);
 
@@ -112,7 +114,8 @@ public class AuthService
         if (user.EmailConfirmationCodeExpiry < DateTime.UtcNow)
             throw new InvalidOperationException("Code de confirmation expiré");
 
-        if (!string.Equals(user.EmailConfirmationCode, code, StringComparison.OrdinalIgnoreCase))
+        var hashedCode = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(code)));
+        if (!string.Equals(user.EmailConfirmationCode, hashedCode, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Code de confirmation invalide");
 
         user.EmailConfirmed = true;
@@ -131,7 +134,7 @@ public class AuthService
             throw new InvalidOperationException("Email déjà confirmé");
 
         var code = GenerateCode();
-        user.EmailConfirmationCode = code;
+        user.EmailConfirmationCode = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(code)));
         user.EmailConfirmationCodeExpiry = DateTime.UtcNow.AddMinutes(15);
         await _userManager.UpdateAsync(user);
 
@@ -197,6 +200,185 @@ public class AuthService
         for (int i = 0; i < 6; i++)
             code[i] = CodeChars[bytes[i] % CodeChars.Length];
         return new string(code);
+    }
+
+    public async Task<bool> RequiresTwoFactorAsync(string email)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null) return false;
+        return user.TwoFactorEnabled;
+    }
+
+    public async Task<(string sharedKey, string authenticatorUri)> GetTwoFactorSetupAsync(Guid userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) throw new InvalidOperationException("User not found");
+
+        await _userManager.ResetAuthenticatorKeyAsync(user);
+        var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+        if (string.IsNullOrEmpty(unformattedKey))
+        {
+            await _userManager.ResetAuthenticatorKeyAsync(user);
+            unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+        }
+
+        var sharedKey = string.Join(' ', unformattedKey!.Chunk(4).Select(c => new string(c)));
+
+        var email = await _userManager.GetEmailAsync(user);
+        var appName = "DotnetNiger";
+        var authenticatorUri = $"otpauth://totp/{appName}:{Uri.EscapeDataString(email!)}?secret={unformattedKey}&issuer={appName}&digits=6";
+
+        return (sharedKey, authenticatorUri);
+    }
+
+    public async Task<(bool success, string[] recoveryCodes)> EnableTwoFactorAsync(Guid userId, string code)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) throw new InvalidOperationException("User not found");
+
+        var isValid = await _userManager.VerifyTwoFactorTokenAsync(
+            user, _userManager.Options.Tokens.AuthenticatorTokenProvider, code);
+
+        if (!isValid)
+            throw new InvalidOperationException("Code de vérification invalide");
+
+        var result = await _userManager.SetTwoFactorEnabledAsync(user, true);
+        if (!result.Succeeded)
+            throw new InvalidOperationException("Impossible d'activer la double authentification");
+
+        if ((await _userManager.CountRecoveryCodesAsync(user)) == 0)
+        {
+            var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+            return (true, recoveryCodes?.ToArray() ?? []);
+        }
+
+        return (true, []);
+    }
+
+    public async Task<bool> VerifyTwoFactorCodeAsync(Guid userId, string code)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) return false;
+
+        return await _userManager.VerifyTwoFactorTokenAsync(
+            user, _userManager.Options.Tokens.AuthenticatorTokenProvider, code);
+    }
+
+    public async Task<TwoFactorStatusResponse> GetTwoFactorStatusAsync(Guid userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) throw new InvalidOperationException("User not found");
+
+        var recoveryCodes = await _userManager.CountRecoveryCodesAsync(user);
+        return new TwoFactorStatusResponse(user.TwoFactorEnabled, false, recoveryCodes);
+    }
+
+    public async Task<string[]> GenerateRecoveryCodesAsync(Guid userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null) throw new InvalidOperationException("User not found");
+
+        var codes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+        return codes?.ToArray() ?? [];
+    }
+
+    public async Task ChangeEmailAsync(Guid userId, string newEmail)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+            throw new InvalidOperationException("Utilisateur non trouvé");
+
+        if (string.Equals(user.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Le nouvel email est identique à l'email actuel");
+
+        var existing = await _userManager.FindByEmailAsync(newEmail);
+        if (existing != null && existing.Id != userId)
+            throw new InvalidOperationException("Cet email est déjà utilisé par un autre compte");
+
+        var code = GenerateCode();
+        user.EmailConfirmationCode = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(code)));
+        user.EmailConfirmationCodeExpiry = DateTime.UtcNow.AddMinutes(15);
+
+        // Store the pending new email (we'll need a field for this)
+        user.PendingEmail = newEmail;
+        await _userManager.UpdateAsync(user);
+
+        if (!string.IsNullOrEmpty(_smtp.Host))
+        {
+            var confirmUrl = $"{_smtp.AppBaseUrl}/api/v1/profile/confirm-change-email?email={Uri.EscapeDataString(newEmail)}&code={Uri.EscapeDataString(code)}";
+            if (_emailSender is EmailSender typed)
+                await typed.SendConfirmationCodeAsync(user, user.Email!, code, confirmUrl);
+        }
+    }
+
+    public async Task ConfirmChangeEmailAsync(Guid userId, string code)
+    {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user == null)
+            throw new InvalidOperationException("Utilisateur non trouvé");
+
+        if (user.PendingEmail == null)
+            throw new InvalidOperationException("Aucun changement d'email en attente");
+
+        if (user.EmailConfirmationCode == null || user.EmailConfirmationCodeExpiry == null)
+            throw new InvalidOperationException("Aucun code de confirmation trouvé");
+
+        if (user.EmailConfirmationCodeExpiry < DateTime.UtcNow)
+            throw new InvalidOperationException("Code de confirmation expiré");
+
+        var hashedCode = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(code)));
+        if (!string.Equals(user.EmailConfirmationCode, hashedCode, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Code de confirmation invalide");
+
+        var newEmail = user.PendingEmail;
+        user.Email = newEmail;
+        user.UserName = newEmail;
+        user.NormalizedEmail = _userManager.NormalizeEmail(newEmail);
+        user.NormalizedUserName = _userManager.NormalizeName(newEmail);
+        user.PendingEmail = null;
+        user.EmailConfirmationCode = null;
+        user.EmailConfirmationCodeExpiry = null;
+        user.EmailConfirmed = true;
+        await _userManager.UpdateAsync(user);
+    }
+
+    public async Task RecordLoginAsync(Guid userId, string ipAddress, string userAgent, bool success, string? provider = null, string? failureReason = null)
+    {
+        var entry = new LoginHistory
+        {
+            Id = Guid.NewGuid(),
+            UserId = userId,
+            IpAddress = ipAddress,
+            UserAgent = userAgent,
+            Provider = provider,
+            Success = success,
+            FailureReason = failureReason
+        };
+        _db.LoginHistories.Add(entry);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task<object> GetLoginHistoryAsync(Guid userId, int page, int pageSize)
+    {
+        var query = _db.LoginHistories.Where(h => h.UserId == userId);
+        var total = await query.CountAsync();
+        var items = await query
+            .OrderByDescending(h => h.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(h => new
+            {
+                h.Id,
+                h.IpAddress,
+                h.UserAgent,
+                h.Provider,
+                h.Success,
+                h.FailureReason,
+                h.CreatedAt
+            })
+            .ToListAsync();
+
+        return new { Items = items, TotalCount = total, Page = page, PageSize = pageSize };
     }
 
     private async Task SendConfirmationEmailAsync(ApplicationUser user, string code)

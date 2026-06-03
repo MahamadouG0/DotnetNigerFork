@@ -1,6 +1,13 @@
 version: "3.8"
 
 services:
+  consul:
+    image: hashicorp/consul:latest
+    ports:
+      - "8500:8500"
+    networks:
+      - dotnetniger
+
   # API Gateway (port 5500)
   gateway:
     build:
@@ -11,71 +18,19 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5000
-      - DownstreamServices__Identity__HealthUrl=http://identity:8081/api/v1/diagnostics/health
-      - DownstreamServices__Identity__SwaggerUrl=http://identity:8081/swagger/v1/swagger.json
-      - DownstreamServices__Community__HealthUrl=http://community:8082/api/v1/test/health
-      - DownstreamServices__Community__SwaggerUrl=http://community:8082/swagger/v1/swagger.json
+      - ServiceDiscovery__Provider=Consul
+      - DownstreamServices__Identity__DevUrl=http://identity:8081
+      - DownstreamServices__Identity__HealthEndpoint=/api/v1/diagnostics/health
+      - DownstreamServices__Identity__SwaggerEndpoint=/swagger/v1/swagger.json
+      - DownstreamServices__Community__DevUrl=http://community:8082
+      - DownstreamServices__Community__HealthEndpoint=/api/v1/test/health
+      - DownstreamServices__Community__SwaggerEndpoint=/swagger/v1/swagger.json
     depends_on:
+      - consul
       - identity
       - community
     networks:
       - dotnetniger
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  # Identity API (port 8081 - interne)
-  identity:
-    build:
-      context: .
-      dockerfile: DotnetNiger.Identity/Dockerfile
-    ports:
-      - "8081:8081"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:8081
-      - ConnectionStrings__DefaultConnection=Data Source=/data/DotnetNigerIdentity.db
-      - CommunityApi__BaseUrl=http://community:8082/
-      - CommunityApi__ProvisioningApiKey=dev-internal-provisioning-key-change-me
-      - Integration__ProvisioningApiKey=dev-internal-provisioning-key-change-me
-    depends_on:
-      - sqlserver
-    networks:
-      - dotnetniger
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  # Community API (port 8082 - interne)
-  community:
-    build:
-      context: .
-      dockerfile: DotnetNiger.Community/Dockerfile
-    ports:
-      - "8082:8082"
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:8082
-      - ConnectionStrings__DotnetNigerDb=Data Source=/tmp/DotnetNiger.Community.db
-      - IdentityApi__BaseUrl=http://identity:8081/
-      - IdentityApi__ProvisioningApiKey=dev-internal-provisioning-key-change-me
-      - Integration__ProvisioningApiKey=dev-internal-provisioning-key-change-me
-    depends_on:
-      - sqlserver
-    networks:
-      - dotnetniger
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
-  # SQL Server
-  # sqlserver:
   #   image: mcr.microsoft.com/mssql/server:2022-latest
   #   environment:
   #     - ACCEPT_EULA=Y
@@ -93,6 +48,49 @@ services:
   #     timeout: 5s
   #     retries: 3
 
+  identity:
+    build:
+      context: .
+      dockerfile: DotnetNiger.Identity/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8081
+      - ConnectionStrings__DefaultConnection=Data Source=data/identity.db
+      - Consul__Host=consul
+      - Gateway__Enabled=true
+      - Gateway__RegistrationUrl=http://gateway:5000/api/service-registry/register
+      - Smtp__AppBaseUrl=http://gateway:5000
+      - DatabaseProvider=Sqlite
+    volumes:
+      - identity_data:/app/data
+    depends_on:
+      - consul
+    networks:
+      - dotnetniger
+
+  community:
+    build:
+      context: .
+      dockerfile: DotnetNiger.Community/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8082
+      - ConnectionStrings__DefaultConnection=Data Source=data/community.db
+      - Consul__Host=consul
+      - Gateway__Enabled=true
+      - Gateway__RegistrationUrl=http://gateway:5000/api/service-registry/register
+      - Jwt__Authority=http://identity:8081
+      - Jwt__MetadataAddress=http://identity:8081/.well-known/openid-configuration
+      - Identity__BaseUrl=http://identity:8081
+      - DatabaseProvider=Sqlite
+    volumes:
+      - community_data:/app/data
+    depends_on:
+      - identity
+      - consul
+    networks:
+      - dotnetniger
+
 networks:
   dotnetniger:
     driver: bridge
@@ -100,3 +98,5 @@ networks:
 volumes:
   sqlserver_data:
     driver: local
+  identity_data:
+  community_data:

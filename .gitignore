@@ -44,9 +44,11 @@ coverage/
 
 # User-specific files
 *.rsuser
-*.suo
 *.user
 *.userosscache
+
+# Development settings (local secrets)
+DotnetNiger.Identity/appsettings.Development.json
 *.sln.docstates
 
 # Local History for Visual Studio Code
@@ -138,11 +140,20 @@ local.settings.json
 *.pfx
 !.gitkeep
 
+# Generated Ocelot merged config
+ocelot.json
+
 # Folder
 DotnetNiger/
 
 # Health report (contient des infos sensibles sur l'architecture)
 docs/HEALTH_REPORT.md
+
+# Guide de déploiement (contient des infos sensibles : URLs, comptes)
+docs/DEPLOY_GUIDE.md
+
+# Présentations
+docs/DotnetNiger_Presentation*.pptx
 
 DotnetNiger
 

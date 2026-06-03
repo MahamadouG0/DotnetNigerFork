@@ -1,0 +1,60 @@
+@page
+@model DotnetNiger.Identity.Web.Pages.SupportModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    ViewData["Title"] = "Support";
+    var identityUrl = (Configuration["Identity:BaseUrl"] ?? "https://localhost:7075").TrimEnd('/');
+}
+<div class="container py-5" style="max-width:800px;">
+    <h1 class="fw-bold mb-2">Support</h1>
+    <p class="text-muted mb-5">Nous sommes là pour vous aider.</p>
+
+    <h5 class="fw-bold mb-3">Centre d'aide</h5>
+    <p class="text-muted mb-4">
+        Consultez notre <a href="/Docs">documentation</a> pour les guides d'utilisation et les références API.
+    </p>
+
+    <h5 class="fw-bold mb-3">FAQ Développeurs</h5>
+    <div class="accordion mb-4" id="faq">
+        <div class="accordion-item">
+            <h6 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq1">Comment créer un compte ?</button></h6>
+            <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faq">
+                <div class="accordion-body text-muted small">Rendez-vous sur <a href="@identityUrl/Account/Register">la page d'inscription</a> et remplissez le formulaire.</div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h6 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq2">Comment générer une clé API ?</button></h6>
+            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faq">
+                <div class="accordion-body text-muted small">Connectez-vous et allez dans Développeur > Clés API pour créer et gérer vos clés.</div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h6 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq3">La plateforme est-elle vraiment gratuite ?</button></h6>
+            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faq">
+                <div class="accordion-body text-muted small">Oui, DotnetNiger est entièrement gratuit. Aucun abonnement ni paiement caché.</div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h6 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq4">Comment réinitialiser mon mot de passe ?</button></h6>
+            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faq">
+                <div class="accordion-body text-muted small">Utilisez le lien <a href="@identityUrl/Account/ForgotPassword">Mot de passe oublié</a> sur la page de connexion.</div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h6 class="accordion-header"><button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq5">Où trouver la documentation API ?</button></h6>
+            <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faq">
+                <div class="accordion-body text-muted small">La documentation interactive Swagger est disponible <a href="@identityUrl/swagger">ici</a>.</div>
+            </div>
+        </div>
+    </div>
+
+    <h5 class="fw-bold mb-3">Support par email</h5>
+    <p class="text-muted mb-4">
+        Écrivez-nous à <a href="mailto:support@dotnetniger.com">support@dotnetniger.com</a>. Nous répondons sous 24h ouvrées.
+    </p>
+
+    <h5 class="fw-bold mb-3">Signaler un bug</h5>
+    <p class="text-muted">
+        Vous avez trouvé un problème ? Ouvrez une issue sur notre <a href="#">GitHub</a> ou contactez-nous par email.
+    </p>
+</div>

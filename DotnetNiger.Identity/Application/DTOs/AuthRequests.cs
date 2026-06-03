@@ -38,3 +38,42 @@ public record RegisterRequest(
 public record ConfirmEmailRequest(
     [Required][EmailAddress] string Email,
     [Required] string Code);
+
+public record RegisterTenantRequest(
+    [Required][StringLength(100, MinimumLength = 2)] string CompanyName,
+    [Required][StringLength(50, MinimumLength = 2)][RegularExpression(@"^[a-z0-9]+(-[a-z0-9]+)*$", ErrorMessage = "Le slug doit contenir uniquement des lettres minuscules, chiffres et tirets")] string Slug,
+    [Required][EmailAddress] string AdminEmail,
+    [Required][StringLength(100, MinimumLength = 8)] string AdminPassword,
+    [Required][StringLength(50, MinimumLength = 1)] string AdminFirstName,
+    [Required][StringLength(50, MinimumLength = 1)] string AdminLastName);
+
+public record Enable2faRequest(
+    [Required] string Code);
+
+public record Verify2faRequest(
+    [Required] string Code,
+    [Required] string ChallengeToken,
+    bool RememberMachine = false);
+
+public record Disable2faRequest(
+    [Required] string Code);
+
+public record TwoFactorRecoveryCodeRequest(
+    [Required] string RecoveryCode,
+    [Required] string ChallengeToken);
+
+public record ConsentRequest(
+    [Required] string ConsentType,
+    [Required] string ConsentVersion,
+    bool Granted = true);
+
+public record ChangeEmailRequest(
+    [Required][EmailAddress] string NewEmail);
+
+public record ConfirmChangeEmailRequest(
+    [Required][EmailAddress] string NewEmail,
+    [Required] string Code);
+
+public record InviteAdminRequest(
+    [Required][EmailAddress] string Email,
+    [Required] string Role);

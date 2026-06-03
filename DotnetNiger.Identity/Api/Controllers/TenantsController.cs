@@ -7,6 +7,7 @@ namespace DotnetNiger.Identity.Api.Controllers;
 
 [ApiController]
 [ApiVersion("1.0")]
+
 [Route("api/v{version:apiVersion}/admin/tenants")]
 [Authorize(Roles = "Admin")]
 public class TenantsController : ControllerBase
@@ -23,12 +24,13 @@ public class TenantsController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = tenant.Id }, tenant);
     }
 
-    /// <summary>Liste tous les tenants de la plateforme.</summary>
+    /// <summary>Liste tous les tenants de la plateforme (paginated).</summary>
     [HttpGet]
-    public async Task<ActionResult<List<TenantResponse>>> GetAll()
+    public async Task<ActionResult<PaginatedResponse<TenantResponse>>> GetAll(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        var tenants = await _tenantService.GetAllAsync();
-        return Ok(tenants);
+        var result = await _tenantService.GetAllAsync(new PaginationQuery(page, pageSize));
+        return Ok(result);
     }
 
     /// <summary>Retourne un tenant par son ID.</summary>

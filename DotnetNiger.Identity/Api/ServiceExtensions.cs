@@ -1,4 +1,6 @@
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using OpenIddict.EntityFrameworkCore;
@@ -7,6 +9,7 @@ using Asp.Versioning;
 using DotnetNiger.Identity.Domain.Entities;
 using DotnetNiger.Identity.Infrastructure;
 using DotnetNiger.Identity.Application.Services;
+using DotnetNiger.Identity.Api.Authentication;
 
 namespace DotnetNiger.Identity.Api;
 
@@ -14,15 +17,36 @@ public static class ServiceExtensions
 {
     /// <summary>Configure l'infrastructure : DbContext, Identity, OpenIddict, Auth externes, CORS.</summary>
     public static IServiceCollection AddIdentityInfrastructure(
-        this IServiceCollection services, IConfiguration config)
+        this IServiceCollection services, IConfiguration config, IHostEnvironment env)
     {
+        services.AddMemoryCache();
+        services.AddHostedService<GdprCleanupService>();
+
         services.AddDbContext<IdentityDbContext>(options =>
         {
-            options.UseSqlite(config.GetConnectionString("DefaultConnection"));
+            var provider = config.GetValue<string>("DatabaseProvider", "Sqlite");
+            var connStr = config.GetConnectionString("DefaultConnection") ?? "Data Source=DotnetNigerIdentity.db";
+
+            if (provider == "SqlServer")
+                options.UseSqlServer(connStr, x => x.MigrationsAssembly("DotnetNiger.Identity"));
+            else if (provider is "PostgreSql" or "PostgreSQL" or "Npgsql")
+                options.UseNpgsql(connStr, x => x.MigrationsAssembly("DotnetNiger.Identity"));
+            else
+                options.UseSqlite(connStr, x => x.MigrationsAssembly("DotnetNiger.Identity"));
+
             options.UseOpenIddict();
+            options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         });
 
         services.Configure<SmtpOptions>(config.GetSection("Smtp"));
+
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.LoginPath = "/Account/Login";
+            options.AccessDeniedPath = "/Account/AccessDenied";
+            options.SlidingExpiration = true;
+            options.ExpireTimeSpan = TimeSpan.FromHours(1);
+        });
 
         services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
         {
@@ -43,20 +67,76 @@ public static class ServiceExtensions
             .AddServer(server =>
             {
                 server.SetTokenEndpointUris("/connect/token")
+                      .SetAuthorizationEndpointUris("/connect/authorize")
+                      .SetLogoutEndpointUris("/connect/logout")
                       .SetUserinfoEndpointUris("/connect/userinfo");
 
                 server.AllowPasswordFlow()
                       .AllowRefreshTokenFlow()
+                      .AllowAuthorizationCodeFlow()
+                          .RequireProofKeyForCodeExchange()
+                      .AllowClientCredentialsFlow()
                       .SetRefreshTokenLifetime(TimeSpan.FromDays(14))
-                      .SetRefreshTokenReuseLeeway(TimeSpan.FromSeconds(30))
-                      .AcceptAnonymousClients();
+                      .SetRefreshTokenReuseLeeway(TimeSpan.FromSeconds(0));
 
-                server.AddEphemeralEncryptionKey()
-                      .AddEphemeralSigningKey();
+                server.DisableAccessTokenEncryption();
 
-                server.UseAspNetCore()
+                if (env.IsDevelopment())
+                {
+                    // Load development certificate for HTTPS
+                    var certPath = Path.Combine(AppContext.BaseDirectory, "https", "localhost.pfx");
+                    var certPassword = "1234"; // Default password for dotnet dev certs
+                    
+                    if (File.Exists(certPath))
+                    {
+                        try
+                        {
+                            using var cert = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12(
+                                File.ReadAllBytes(certPath), certPassword);
+                            server.AddEncryptionCertificate(cert)
+                                  .AddSigningCertificate(cert);
+                        }
+                        catch
+                        {
+                            server.AddEphemeralEncryptionKey()
+                                  .AddEphemeralSigningKey();
+                        }
+                    }
+                    else
+                    {
+                        server.AddEphemeralEncryptionKey()
+                              .AddEphemeralSigningKey();
+                    }
+                    
+                    server.IgnoreEndpointPermissions()
+                          .IgnoreGrantTypePermissions()
+                          .IgnoreScopePermissions();
+                    server.AcceptAnonymousClients();
+                }
+                else
+                {
+                    var certPath = config["OpenIddict:CertificatePath"] ?? "/etc/ssl/certs/opendict.pfx";
+                    var certPassword = config["OpenIddict:CertificatePassword"] ?? "";
+                    if (File.Exists(certPath))
+                    {
+                        using var cert = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12(File.ReadAllBytes(certPath), certPassword);
+                        server.AddEncryptionCertificate(cert)
+                              .AddSigningCertificate(cert);
+                    }
+                    else
+                    {
+                        server.AddEphemeralEncryptionKey()
+                              .AddEphemeralSigningKey();
+                    }
+                }
+
+                var aspNetCore = server.UseAspNetCore()
                       .EnableTokenEndpointPassthrough()
-                      .DisableTransportSecurityRequirement();
+                      .EnableAuthorizationEndpointPassthrough()
+                      .EnableLogoutEndpointPassthrough();
+
+                if (env.IsDevelopment())
+                    aspNetCore.DisableTransportSecurityRequirement();
 
                 server.RegisterScopes(
                     OpenIddict.Abstractions.OpenIddictConstants.Scopes.OpenId,
@@ -76,7 +156,9 @@ public static class ServiceExtensions
         {
             options.DefaultAuthenticateScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme;
-        });
+        })
+        .AddScheme<ApiKeyAuthenticationOptions, ApiKeyAuthenticationHandler>(
+            ApiKeyAuthenticationDefaults.AuthenticationScheme, null);
 
         var googleId = config["Authentication:Google:ClientId"];
         if (!string.IsNullOrEmpty(googleId))
@@ -85,32 +167,46 @@ public static class ServiceExtensions
             {
                 google.ClientId = googleId;
                 google.ClientSecret = config["Authentication:Google:ClientSecret"] ?? "";
-            });
-        }
-
-        var msId = config["Authentication:Microsoft:ClientId"];
-        if (!string.IsNullOrEmpty(msId))
-        {
-            authBuilder.AddMicrosoftAccount(microsoft =>
-            {
-                microsoft.ClientId = msId;
-                microsoft.ClientSecret = config["Authentication:Microsoft:ClientSecret"] ?? "";
+                google.SignInScheme = IdentityConstants.ExternalScheme;
+                google.CorrelationCookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+                google.CorrelationCookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
+                google.Events.OnRemoteFailure = ctx =>
+                {
+                    var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ctx.Failure, "Google OAuth remote failure: {Message} | Inner: {Inner} | Stack: {Stack}",
+                        ctx.Failure?.Message, ctx.Failure?.InnerException?.Message, ctx.Failure?.StackTrace);
+                    ctx.Response.Redirect($"/Account/Login?error={Uri.EscapeDataString(ctx.Failure?.Message ?? "google_failed")}");
+                    ctx.HandleResponse();
+                    return Task.CompletedTask;
+                };
             });
         }
 
         var ghId = config["Authentication:GitHub:ClientId"];
         if (!string.IsNullOrEmpty(ghId))
         {
-            authBuilder.AddOAuth("GitHub", github =>
+            authBuilder.AddOAuth("GitHub", "GitHub", github =>
             {
                 github.ClientId = ghId;
                 github.ClientSecret = config["Authentication:GitHub:ClientSecret"] ?? "";
+                github.SignInScheme = IdentityConstants.ExternalScheme;
                 github.CallbackPath = "/signin-github";
+                github.CorrelationCookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+                github.CorrelationCookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
                 github.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
                 github.TokenEndpoint = "https://github.com/login/oauth/access_token";
                 github.UserInformationEndpoint = "https://api.github.com/user";
                 github.Scope.Add("user:email");
 
+                github.Events.OnRemoteFailure = ctx =>
+                {
+                    var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
+                    logger.LogError(ctx.Failure, "GitHub OAuth remote failure: {Message} | Inner: {Inner} | Stack: {Stack}",
+                        ctx.Failure?.Message, ctx.Failure?.InnerException?.Message, ctx.Failure?.StackTrace);
+                    ctx.Response.Redirect($"/Account/Login?error={Uri.EscapeDataString(ctx.Failure?.Message ?? "github_failed")}");
+                    ctx.HandleResponse();
+                    return Task.CompletedTask;
+                };
                 github.Events.OnCreatingTicket = async ctx =>
                 {
                     if (ctx.Identity == null || ctx.AccessToken == null) return;
@@ -152,8 +248,71 @@ public static class ServiceExtensions
             });
         }
 
-        services.AddCors(options => options.AddPolicy("GatewayOnly", builder =>
-            builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+        return services;
+    }
+
+    /// <summary>Configure CORS en fonction de l'environnement.</summary>
+    public static IServiceCollection AddCorsPolicy(this IServiceCollection services, IHostEnvironment environment, IConfiguration configuration)
+    {
+        services.AddCors(options =>
+        {
+            if (environment.IsDevelopment())
+                options.AddPolicy("AllowAll", builder =>
+                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+            else
+            {
+                var origins = configuration["Cors:AllowedOrigins"];
+                if (!string.IsNullOrWhiteSpace(origins))
+                    options.AddPolicy("AllowAll", builder =>
+                        builder.WithOrigins(origins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                              .AllowAnyMethod().AllowAnyHeader().AllowCredentials());
+                else
+                    options.AddPolicy("AllowAll", builder =>
+                        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+            }
+        });
+
+        return services;
+    }
+
+    /// <summary>Configure le rate limiting pour les endpoints publics.</summary>
+    public static IServiceCollection AddRateLimitingPolicies(this IServiceCollection services, IConfiguration config)
+    {
+        var permitLimit = int.TryParse(config["RateLimiting:PermitLimit"], out var p) ? p : 5;
+        var windowSeconds = int.TryParse(config["RateLimiting:WindowSeconds"], out var w) ? w : 60;
+        var authPermitLimit = int.TryParse(config["RateLimiting:AuthPermitLimit"], out var ap) ? ap : 20;
+        var authWindowSeconds = int.TryParse(config["RateLimiting:AuthWindowSeconds"], out var aw) ? aw : 60;
+
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.AddFixedWindowLimiter("TenantRegistration", opt =>
+            {
+                opt.PermitLimit = permitLimit;
+                opt.Window = TimeSpan.FromSeconds(windowSeconds);
+                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                opt.QueueLimit = 0;
+            });
+
+            options.AddFixedWindowLimiter("Auth", opt =>
+            {
+                opt.PermitLimit = authPermitLimit;
+                opt.Window = TimeSpan.FromSeconds(authWindowSeconds);
+                opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                opt.QueueLimit = 0;
+            });
+
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 500,
+                        Window = TimeSpan.FromSeconds(60),
+                        QueueLimit = 0
+                    }));
+        });
 
         return services;
     }
@@ -168,8 +327,13 @@ public static class ServiceExtensions
         services.AddScoped<RoleService>();
         services.AddScoped<PermissionService>();
         services.AddScoped<TenantService>();
+        services.AddScoped<TenantClientService>();
+        services.AddScoped<TenantApiKeyService>();
         services.AddScoped<AdminService>();
         services.AddScoped<IEmailSender<ApplicationUser>, EmailSender>();
+        services.AddScoped<ExternalServiceService>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
+        services.AddScoped<GdprService>();
 
         return services;
     }

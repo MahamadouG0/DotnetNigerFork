@@ -26,4 +26,5 @@ public class CreateEventRequest
     public string MeetupLink { get; set; } = string.Empty;
     public bool IsPublished { get; set; }
     public bool IsArchived { get; set; }
+    public List<string> TagNames { get; set; } = [];
 }

@@ -1,0 +1,267 @@
+@page "/Developer/Admin/Tenants/{tenantId:guid}/Roles"
+@model DotnetNiger.Identity.Web.Pages.Developer.Admin.RolesModel
+@{
+    ViewData["Title"] = "Rôles";
+    // Layout géré par _ViewStart.cshtml
+}
+
+<h1>Rôles et permissions</h1>
+<p class="lead">Gestion des rôles et permissions du tenant.</p>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-@(Model.IsError ? "danger" : "success") alert-dismissible fade show" role="alert">
+        @Model.Message
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Rôles</h5>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
+            + Nouveau rôle
+        </button>
+    </div>
+    <div class="card-body">
+        @if (Model.Roles.Count == 0)
+        {
+            <p class="text-muted mb-0">Aucun rôle.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Description</th>
+                            <th>Utilisateurs</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Roles)
+                        {
+                            <tr>
+                                <td><strong>@r.Name</strong></td>
+                                <td>@(r.Description ?? "—")</td>
+                                <td><span class="badge bg-info">@r.UserCount</span></td>
+                                <td>
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#editModal-@r.Id"
+                                            title="Modifier">&#9998;</button>
+                                    <button type="button" class="btn btn-outline-primary btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#permModal-@r.Id"
+                                            title="Permissions">&#128274;</button>
+                                    <button type="button" class="btn btn-outline-info btn-sm"
+                                            data-bs-toggle="modal" data-bs-target="#usersModal-@r.Id"
+                                            title="Utilisateurs">&#128101;</button>
+                                    <form method="post" asp-page-handler="Delete" asp-route-roleId="@r.Id" style="display:inline"
+                                          onsubmit="return confirm('Supprimer ce rôle ?')">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer">&#128465;</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            <!-- Permissions Modal -->
+                            <div class="modal fade" id="permModal-@r.Id" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <form method="post" asp-page-handler="AssignPermissions" asp-route-roleId="@r.Id">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Permissions — @r.Name</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                @if (Model.PermissionGroups.Count == 0)
+                                                {
+                                                    <p class="text-muted">Aucune permission disponible.</p>
+                                                }
+                                                else
+                                                {
+                                                    @foreach (var group in Model.PermissionGroups)
+                                                    {
+                                                        <h6 class="mt-2">@group.Category</h6>
+                                                        <div class="row">
+                                                            @foreach (var perm in group.Permissions)
+                                                            {
+                                                                <div class="col-md-6">
+                                                                    <div class="form-check">
+                                                                        <input class="form-check-input" type="checkbox"
+                                                                               name="SelectedPermissionIds" value="@perm.Id"
+                                                                               id="perm-@perm.Id"
+                                                                               @(Model.RolePermissionIds.Contains(perm.Id) ? "checked" : "") />
+                                                                        <label class="form-check-label" for="perm-@perm.Id">
+                                                                            <code>@perm.Name</code>
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    }
+                                                }
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editModal-@r.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form method="post" asp-page-handler="Edit" asp-route-roleId="@r.Id">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Modifier @r.Name</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label class="form-label">Nom</label>
+                                                    <input name="EditInput.Name" class="form-control" value="@r.Name" />
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Description</label>
+                                                    <textarea name="EditInput.Description" class="form-control" rows="2">@r.Description</textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- User Assignment Modal -->
+                            <div class="modal fade" id="usersModal-@r.Id" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Utilisateurs — @r.Name</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p><span class="badge bg-info">@r.UserCount</span> utilisateur(s) dans ce rôle.</p>
+                                            @if (Model.AllUsers.Count == 0)
+                                            {
+                                                <p class="text-muted">Aucun utilisateur disponible.</p>
+                                            }
+                                            else
+                                            {
+                                                <div class="mb-3">
+                                                    <label class="form-label">Ajouter un utilisateur</label>
+                                                    <div class="input-group">
+                                                        <select class="form-select" id="userSelect-@r.Id">
+                                                            <option value="">Sélectionner un utilisateur...</option>
+                                                            @foreach (var u in Model.AllUsers)
+                                                            {
+                                                                <option value="@u.Id">@u.Email</option>
+                                                            }
+                                                        </select>
+                                                        <button type="button" class="btn btn-primary"
+                                                                onclick="document.getElementById('addUserRoleId-@r.Id').value='@r.Id'; document.getElementById('addUserId-@r.Id').value=document.getElementById('userSelect-@r.Id').value; document.getElementById('addUserForm-@r.Id').submit();">
+                                                            Ajouter
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <form method="post" asp-page-handler="AddUserToRole" asp-route-roleId="@r.Id" id="addUserForm-@r.Id" style="display:none">
+                                                    <input type="hidden" id="addUserId-@r.Id" name="userId" />
+                                                    <input type="hidden" id="addUserRoleId-@r.Id" name="roleId" />
+                                                </form>
+                                                <hr />
+                                                <div class="mb-3">
+                                                    <label class="form-label">Retirer un utilisateur</label>
+                                                    <div class="input-group">
+                                                        <select class="form-select" id="removeUserSelect-@r.Id">
+                                                            <option value="">Sélectionner un utilisateur...</option>
+                                                            @foreach (var u in Model.AllUsers)
+                                                            {
+                                                                <option value="@u.Id">@u.Email</option>
+                                                            }
+                                                        </select>
+                                                        <button type="button" class="btn btn-danger"
+                                                                onclick="document.getElementById('removeUserRoleId-@r.Id').value='@r.Id'; document.getElementById('removeUserId-@r.Id').value=document.getElementById('removeUserSelect-@r.Id').value; document.getElementById('removeUserForm-@r.Id').submit();">
+                                                            Retirer
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <form method="post" asp-page-handler="RemoveUserFromRole" asp-route-roleId="@r.Id" id="removeUserForm-@r.Id" style="display:none">
+                                                    <input type="hidden" id="removeUserId-@r.Id" name="userId" />
+                                                    <input type="hidden" id="removeUserRoleId-@r.Id" name="roleId" />
+                                                </form>
+                                            }
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Create Modal -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Create">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nouveau rôle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nom</label>
+                        <input name="CreateInput.Name" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="CreateInput.Description" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Créer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Permissions disponibles</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.PermissionGroups.Count == 0)
+        {
+            <p class="text-muted mb-0">Aucune permission.</p>
+        }
+        else
+        {
+            <div class="row">
+                @foreach (var group in Model.PermissionGroups)
+                {
+                    <div class="col-md-4 mb-2">
+                        <h6>@group.Category</h6>
+                        <ul class="list-unstyled">
+                            @foreach (var perm in group.Permissions)
+                            {
+                                <li><code>@perm.Name</code></li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
